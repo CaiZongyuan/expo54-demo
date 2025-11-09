@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>健康管理应用</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .phone-container {
+      width: 402px;
+      height: 874px;
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 40px;
+      padding: 10px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .phone-screen {
+      width: 100%;
+      height: 100%;
+      background: #000;
+      border-radius: 30px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .status-bar {
+      height: 66px;
+      background: rgba(25, 25, 25, 1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 16px;
+      color: white;
+    }
+
+    .nav-buttons {
+      display: flex;
+      gap: 16px;
+    }
+
+    .nav-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .nav-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .nav-btn svg {
+      width: 24px;
+      height: 24px;
+      fill: white;
+    }
+
+    .page-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: white;
+    }
+
+    .user-section {
+      padding: 0 16px;
+      margin-bottom: 10px;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 8px 16px;
+    }
+
+    .user-avatar {
+      width: 114px;
+      height: 44px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 25px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 12px;
+    }
+
+    .avatar-icon {
+      width: 24px;
+      height: 24px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #333;
+    }
+
+    .username {
+      color: white;
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .settings-btn {
+      width: 44px;
+      height: 44px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 25px;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .content-area {
+      flex: 1;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 25px 25px 0 0;
+      padding: 15px 16px;
+    }
+
+    .tab-navigation {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .tab {
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      padding: 8px 0;
+      border: none;
+      background: none;
+      cursor: pointer;
+      position: relative;
+      transition: opacity 0.3s;
+    }
+
+    .tab.active {
+      text-decoration: underline;
+    }
+
+    .health-card {
+      background: rgba(91, 93, 118, 0.3);
+      backdrop-filter: blur(10px);
+      border-radius: 25px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      color: white;
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    .edit-btn {
+      color: rgba(98, 98, 98, 1);
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .divider {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.2);
+      margin-bottom: 12px;
+    }
+
+    .health-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-left: 16px;
+      position: relative;
+    }
+
+    .health-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .item-indicator {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 8px;
+      height: 16px;
+      background: rgba(91, 93, 118, 0.3);
+      border-radius: 4px;
+    }
+
+    .item-label {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .item-value {
+      color: rgba(98, 98, 98, 1);
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    /* 图标样式 */
+    .icon {
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
+    }
+
+    .back-icon {
+      transform: rotate(-90deg);
+    }
+
+    /* 响应式设计 */
+    @media (max-width: 480px) {
+      body {
+        padding: 10px;
+      }
+
+      .phone-container {
+        width: 100%;
+        max-width: 402px;
+        height: auto;
+        min-height: 874px;
+      }
+
+      .phone-screen {
+        min-height: 874px;
+      }
+    }
+
+    /* 动画效果 */
+    .health-card {
+      animation: fadeInUp 0.5s ease-out;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .nav-btn, .tab, .edit-btn {
+      transition: all 0.3s ease;
+    }
+
+    .nav-btn:active, .tab:active, .edit-btn:active {
+      transform: scale(0.95);
+    }
+  </style>
+</head>
+<body>
+  <div class="phone-container">
+    <div class="phone-screen">
+      <!-- 状态栏 -->
+      <div class="status-bar">
+        <div class="nav-buttons">
+          <button class="nav-btn" aria-label="返回">
+            <svg class="icon back-icon" viewBox="0 0 24 24">
+              <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+            </svg>
+          </button>
+        </div>
+        <h1 class="page-title">健康</h1>
+        <div class="nav-buttons">
+          <button class="nav-btn" aria-label="菜单">
+            <svg class="icon" viewBox="0 0 24 24">
+              <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- 用户信息区域 -->
+      <div class="user-section">
+        <div class="user-info">
+          <div class="user-avatar">
+            <div class="avatar-icon">用</div>
+            <span class="username">czysb</span>
+          </div>
+          <button class="settings-btn" aria-label="设置">
+            <svg class="icon" viewBox="0 0 24 24" fill="white">
+              <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- 内容区域 -->
+      <div class="content-area">
+        <!-- 标签导航 -->
+        <div class="tab-navigation">
+          <button class="tab">运动健康</button>
+          <button class="tab active">健康总览</button>
+          <button class="tab">就医情况</button>
+          <button class="tab">健康自测</button>
+        </div>
+
+        <!-- 家族史卡片 -->
+        <div class="health-card">
+          <div class="card-header">
+            <h2 class="card-title">家族史</h2>
+            <a href="#" class="edit-btn">编辑 ></a>
+          </div>
+          <div class="divider"></div>
+          <div class="health-item">
+            <div class="item-indicator"></div>
+            <span class="item-label">家族疾病</span>
+            <span class="item-value">待补充</span>
+          </div>
+        </div>
+
+        <!-- 个人史卡片 -->
+        <div class="health-card">
+          <div class="card-header">
+            <h2 class="card-title">个人史</h2>
+            <a href="#" class="edit-btn">编辑 ></a>
+          </div>
+          <div class="divider"></div>
+          <div class="health-item">
+            <div class="item-indicator"></div>
+            <span class="item-label">饮酒情况</span>
+            <span class="item-value">待补充</span>
+          </div>
+          <div class="health-item">
+            <div class="item-indicator"></div>
+            <span class="item-label">吸烟情况</span>
+            <span class="item-value">待补充</span>
+          </div>
+        </div>
+
+        <!-- 既往史卡片 -->
+        <div class="health-card">
+          <div class="card-header">
+            <h2 class="card-title">既往史</h2>
+            <a href="#" class="edit-btn">编辑 ></a>
+          </div>
+          <div class="divider"></div>
+          <div class="health-item">
+            <div class="item-indicator"></div>
+            <span class="item-label">疾病史</span>
+            <span class="item-value">待补充</span>
+          </div>
+          <div class="health-item">
+            <div class="item-indicator"></div>
+            <span class="item-label">手术史</span>
+            <span class="item-value">待补充</span>
+          </div>
+          <div class="health-item">
+            <div class="item-indicator"></div>
+            <span class="item-label">过敏史</span>
+            <span class="item-value">待补充</span>
+          </div>
+          <div class="health-item">
+            <div class="item-indicator"></div>
+            <span class="item-label">用药史</span>
+            <span class="item-value">待补充</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 添加交互功能
+    document.addEventListener('DOMContentLoaded', function() {
+      // 标签切换功能
+      const tabs = document.querySelectorAll('.tab');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+          tabs.forEach(t => t.classList.remove('active'));
+          this.classList.add('active');
+        });
+      });
+
+      // 编辑按钮点击效果
+      const editButtons = document.querySelectorAll('.edit-btn');
+      editButtons.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          const cardTitle = this.closest('.health-card').querySelector('.card-title').textContent;
+          console.log(`编辑 ${cardTitle}`);
+          // 这里可以添加编辑功能的实现
+        });
+      });
+
+      // 返回按钮功能
+      const backBtn = document.querySelector('.nav-btn');
+      if (backBtn) {
+        backBtn.addEventListener('click', function() {
+          console.log('返回上一页');
+          // 这里可以添加返回功能的实现
+        });
+      }
+
+      // 设置按钮功能
+      const settingsBtn = document.querySelector('.settings-btn');
+      if (settingsBtn) {
+        settingsBtn.addEventListener('click', function() {
+          console.log('打开设置');
+          // 这里可以添加设置功能的实现
+        });
+      }
+    });
+  </script>
+</body>
+</html>

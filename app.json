@@ -40,7 +40,15 @@
           }
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "react-native",
+          "organization": "neoil-tech-55"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
