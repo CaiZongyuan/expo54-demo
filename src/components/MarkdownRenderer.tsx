@@ -1,12 +1,17 @@
 import React from "react";
-import { Text, View, useColorScheme } from "react-native";
-import { PluginCard } from "./PluginCard";
-import { useMarkdown, Renderer } from "react-native-marked";
-import { parsePluginContent } from "../../utils/pluginParser";
+import Markdown, { Renderer, useMarkdown } from "react-native-marked";
+import { Text, View, ScrollView, useColorScheme } from "react-native";
+import type { TextStyle, ViewStyle } from "react-native";
+
+interface MarkdownRendererProps {
+  content: string;
+  style?: ViewStyle;
+  textStyle?: TextStyle;
+}
 
 // 自定义渲染器，适配应用的暗色主题
 class ChatRenderer extends Renderer {
-  heading(text: string, level: number): React.ReactNode {
+  heading(text: string, level: number, styles?: TextStyle): React.ReactNode {
     const fontSize = level === 1 ? 24 : level === 2 ? 20 : level === 3 ? 18 : 16;
     const fontWeight = level === 1 ? "700" : level === 2 ? "600" : "500";
     const marginVertical = level === 1 ? 16 : level === 2 ? 12 : 8;
@@ -14,13 +19,16 @@ class ChatRenderer extends Renderer {
     return (
       <Text
         key={this.getKey()}
-        style={{
-          fontSize,
-          fontWeight,
-          color: "#ffffff",
-          marginVertical,
-          lineHeight: fontSize * 1.4,
-        }}
+        style={[
+          {
+            fontSize,
+            fontWeight,
+            color: "#ffffff",
+            marginVertical,
+            lineHeight: fontSize * 1.4,
+          },
+          styles,
+        ]}
       >
         {text}
       </Text>
@@ -43,7 +51,7 @@ class ChatRenderer extends Renderer {
     );
   }
 
-  listitem(text: string, ordered?: number): React.ReactNode {
+  listitem(text: string, ordered?: boolean): React.ReactNode {
     return (
       <Text
         key={this.getKey()}
@@ -52,33 +60,38 @@ class ChatRenderer extends Renderer {
           color: "#ffffff",
           lineHeight: 22,
           marginVertical: 2,
-          marginLeft: ordered !== undefined ? 8 : 16,
+          marginLeft: ordered ? 8 : 16,
         }}
       >
-        {ordered !== undefined ? `${ordered}. ` : "• "}{text}
+        {ordered ? `${ordered}. ` : "• "}{text}
       </Text>
     );
   }
 
   code(text: string, language?: string): React.ReactNode {
     return (
-      <Text
+      <View
         key={this.getKey()}
         style={{
           backgroundColor: "rgba(255, 255, 255, 0.1)",
           borderRadius: 8,
           padding: 12,
           marginVertical: 8,
-          fontSize: 14,
-          color: "#ffffff",
-          fontFamily: "monospace",
-          lineHeight: 20,
           borderLeftWidth: 3,
           borderLeftColor: "#4CAF50",
         }}
       >
-        {text}
-      </Text>
+        <Text
+          style={{
+            fontSize: 14,
+            color: "#ffffff",
+            fontFamily: "monospace",
+            lineHeight: 20,
+          }}
+        >
+          {text}
+        </Text>
+      </View>
     );
   }
 
@@ -104,7 +117,7 @@ class ChatRenderer extends Renderer {
 
   blockquote(text: string): React.ReactNode {
     return (
-      <Text
+      <View
         key={this.getKey()}
         style={{
           backgroundColor: "rgba(255, 255, 255, 0.05)",
@@ -112,15 +125,20 @@ class ChatRenderer extends Renderer {
           borderLeftColor: "#2196F3",
           padding: 12,
           marginVertical: 8,
-          fontSize: 16,
-          color: "#e3f2fd",
-          fontStyle: "italic",
-          lineHeight: 22,
           borderRadius: 4,
         }}
       >
-        {text}
-      </Text>
+        <Text
+          style={{
+            fontSize: 16,
+            color: "#e3f2fd",
+            fontStyle: "italic",
+            lineHeight: 22,
+          }}
+        >
+          {text}
+        </Text>
+      </View>
     );
   }
 
@@ -167,47 +185,70 @@ class ChatRenderer extends Renderer {
   }
 }
 
-interface PluginMessageProps {
-  content: string;
-  messageId: string;
-  partIndex: number;
+// 使用 FlatList 版本的 Markdown 组件（性能更好）
+export function MarkdownRenderer({ content, style }: MarkdownRendererProps) {
+  const renderer = new ChatRenderer();
+
+  if (!content || content.trim() === "") {
+    return null;
+  }
+
+  return (
+    <Markdown
+      value={content}
+      renderer={renderer}
+      flatListProps={{
+        initialNumToRender: 10,
+        maxToRenderPerBatch: 10,
+        windowSize: 10,
+        removeClippedSubviews: true,
+      }}
+      styles={{
+        body: {
+          backgroundColor: "transparent",
+        },
+      }}
+      theme={{
+        colors: {
+          background: "transparent",
+          text: "#ffffff",
+          link: "#64B5F6",
+          code: "rgba(255, 255, 255, 0.2)",
+          blockquote: "rgba(255, 255, 255, 0.05)",
+        },
+        spacing: {
+          paragraph: 4,
+          heading1: 16,
+          heading2: 12,
+          heading3: 8,
+          list: 2,
+        },
+      }}
+    />
+  );
 }
 
-export function PluginMessage({ content, messageId, partIndex }: PluginMessageProps) {
+// 使用 ScrollView 版本的 Markdown 组件（更灵活）
+export function MarkdownRendererScroll({ content, style, textStyle }: MarkdownRendererProps) {
   const colorScheme = useColorScheme();
-  const { pluginCards, cleanText } = React.useMemo(
-    () => parsePluginContent(content, messageId, partIndex),
-    [content, messageId, partIndex]
-  );
+  const renderer = new ChatRenderer();
 
-  // 使用自定义渲染器渲染 Markdown
-  const renderer = React.useMemo(() => new ChatRenderer(), []);
-  const markdownElements = useMarkdown(cleanText || "", {
+  if (!content || content.trim() === "") {
+    return null;
+  }
+
+  const elements = useMarkdown(content, {
     colorScheme: colorScheme === "dark" ? "dark" : "light",
     renderer,
   });
 
   return (
-    <View>
-      {/* 渲染插件卡片 */}
-      {pluginCards.map((plugin) => (
-        <PluginCard
-          key={plugin.key}
-          data={plugin.data}
-          isCall={plugin.isCall}
-        />
+    <ScrollView style={style} showsVerticalScrollIndicator={false}>
+      {elements.map((element, index) => (
+        <React.Fragment key={`markdown-${index}`}>{element}</React.Fragment>
       ))}
-
-      {/* 渲染 Markdown 内容 */}
-      {cleanText && (
-        <View style={{ marginVertical: 4 }}>
-          {markdownElements.map((element, index) => (
-            <React.Fragment key={`${messageId}-${partIndex}-md-${index}`}>
-              {element}
-            </React.Fragment>
-          ))}
-        </View>
-      )}
-    </View>
+    </ScrollView>
   );
 }
+
+export default MarkdownRenderer;
