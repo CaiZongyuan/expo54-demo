@@ -1,5 +1,5 @@
 import React from "react";
-import { Text, View } from "react-native";
+import { Image, Text, View } from "react-native";
 import { PluginMessage } from "./PluginMessage";
 
 interface AIMessageProps {
@@ -23,6 +23,20 @@ export function AIMessage({ parts, messageId }: AIMessageProps) {
                 content={part.text || ""}
                 messageId={messageId}
                 partIndex={i}
+              />
+            );
+          case "image":
+            return (
+              <Image
+                key={`${messageId}-${i}`}
+                source={{ uri: part.image }}
+                style={{
+                  width: 250,
+                  height: 250,
+                  borderRadius: 12,
+                  marginVertical: 8,
+                }}
+                resizeMode="cover"
               />
             );
           default:

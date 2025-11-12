@@ -1,5 +1,5 @@
 import React from "react";
-import { Text, View } from "react-native";
+import { Image, Text, View } from "react-native";
 
 interface UserMessageProps {
   parts: Array<{
@@ -44,6 +44,20 @@ export function UserMessage({ parts, messageId }: UserMessageProps) {
                 >
                   {part.text}
                 </Text>
+              );
+            case "image":
+              return (
+                <Image
+                  key={`${messageId}-${i}`}
+                  source={{ uri: part.image }}
+                  style={{
+                    width: 200,
+                    height: 200,
+                    borderRadius: 12,
+                    marginTop: 8,
+                  }}
+                  resizeMode="cover"
+                />
               );
             default:
               return null;

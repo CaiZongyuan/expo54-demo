@@ -6,7 +6,8 @@
       "mcp__context7__get-library-docs",
       "mcp__pixso-mcp__getCode",
       "Bash(mkdir:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "WebFetch(domain:docs.expo.dev)"
     ],
     "deny": [],
     "ask": []

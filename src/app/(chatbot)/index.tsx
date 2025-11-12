@@ -2,10 +2,12 @@ import { useChat } from "@ai-sdk/react";
 import { Ionicons } from "@expo/vector-icons";
 import { DefaultChatTransport } from "ai";
 import { fetch as expoFetch } from "expo/fetch";
+import * as ImagePicker from "expo-image-picker";
 import { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
+  Image,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -14,6 +16,7 @@ import {
   Text,
   TextInput,
   View,
+  Alert,
 } from "react-native";
 import {
   GestureHandlerRootView,
@@ -27,6 +30,7 @@ const { width: screenWidth } = Dimensions.get("window");
 
 export default function ChatBotScreen() {
   const [input, setInput] = useState("");
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -53,10 +57,94 @@ export default function ChatBotScreen() {
     }
   }, [messages, fadeAnim]);
 
+  // 请求相机和媒体库权限
+  const requestPermissions = async () => {
+    const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
+    const mediaLibraryPermission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    return (
+      cameraPermission.status === 'granted' &&
+      mediaLibraryPermission.status === 'granted'
+    );
+  };
+
+  // 从图片库选择图片
+  const pickImage = async () => {
+    const hasPermission = await requestPermissions();
+    if (!hasPermission) {
+      Alert.alert('权限不足', '需要相机和相册权限才能选择图片');
+      return;
+    }
+
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setSelectedImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('选择图片失败:', error);
+      Alert.alert('错误', '选择图片失败，请重试');
+    }
+  };
+
+  // 拍照
+  const takePhoto = async () => {
+    const hasPermission = await requestPermissions();
+    if (!hasPermission) {
+      Alert.alert('权限不足', '需要相机权限才能拍照');
+      return;
+    }
+
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setSelectedImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('拍照失败:', error);
+      Alert.alert('错误', '拍照失败，请重试');
+    }
+  };
+
+  // 删除选中的图片
+  const removeImage = () => {
+    setSelectedImage(null);
+  };
+
   const handleSendMessage = () => {
+    if (!input.trim() && !selectedImage) return;
+
+    const parts: any[] = [];
+
+    // 添加文本内容
     if (input.trim()) {
-      sendMessage({ text: input });
+      parts.push({ type: 'text', text: input.trim() });
+    }
+
+    // 添加图片内容
+    if (selectedImage) {
+      parts.push({
+        type: 'image',
+        image: selectedImage,
+      });
+    }
+
+    if (parts.length > 0) {
+      sendMessage({ parts });
       setInput("");
+      setSelectedImage(null);
     }
   };
 
@@ -287,6 +375,52 @@ export default function ChatBotScreen() {
             </ScrollView>
           </View>
 
+          {/* 图片预览区域 */}
+          {selectedImage && (
+            <View
+              style={{
+                marginHorizontal: 16,
+                marginBottom: 8,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <View
+                style={{
+                  position: "relative",
+                }}
+              >
+                <Image
+                  source={{ uri: selectedImage }}
+                  style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: 12,
+                  }}
+                  resizeMode="cover"
+                />
+                {/* 删除按钮 */}
+                <Pressable
+                  onPress={removeImage}
+                  style={{
+                    position: "absolute",
+                    top: -8,
+                    right: -8,
+                    width: 24,
+                    height: 24,
+                    borderRadius: 12,
+                    backgroundColor: "rgba(0, 0, 0, 0.8)",
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <Ionicons name="close" size={16} color="white" />
+                </Pressable>
+              </View>
+            </View>
+          )}
+
           {/* 输入框区域 */}
           <View
             style={{
@@ -344,10 +478,45 @@ export default function ChatBotScreen() {
                 textAlignVertical="center"
               />
 
-              {/* 语音和发送按钮 */}
+              {/* 语音、图片和发送按钮 */}
               <View
                 style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
               >
+                <Pressable
+                  style={({ pressed }) => ({
+                    width: 32,
+                    height: 32,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    opacity: pressed ? 0.6 : 1,
+                  })}
+                  onPress={() => {
+                    Alert.alert(
+                      '选择图片',
+                      '你想从哪里选择图片？',
+                      [
+                        {
+                          text: '拍照',
+                          onPress: takePhoto,
+                        },
+                        {
+                          text: '从相册选择',
+                          onPress: pickImage,
+                        },
+                        {
+                          text: '取消',
+                          style: 'cancel',
+                        },
+                      ]
+                    );
+                  }}
+                >
+                  <Ionicons
+                    name="image"
+                    size={18}
+                    color="rgba(169, 169, 169, 0.7)"
+                  />
+                </Pressable>
                 <Pressable
                   style={({ pressed }) => ({
                     width: 32,
@@ -371,7 +540,7 @@ export default function ChatBotScreen() {
                     height: 32,
                     borderRadius: 25,
                     backgroundColor:
-                      input.trim() && status === "ready"
+                      (input.trim() || selectedImage) && status === "ready"
                         ? pressed
                           ? "rgba(0, 0, 0, 0.6)"
                           : "rgba(0, 0, 0, 0.8)"
@@ -379,7 +548,7 @@ export default function ChatBotScreen() {
                     justifyContent: "center",
                     alignItems: "center",
                   })}
-                  disabled={!input.trim() || status !== "ready"}
+                  disabled={(!input.trim() && !selectedImage) || status !== "ready"}
                 >
                   <Ionicons name="send" size={16} color="white" />
                 </Pressable>

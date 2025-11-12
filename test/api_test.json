@@ -1,13 +1,17 @@
 {
     "user_id": "wk",
-    "session_id": "002",
+    "session_id": "003",
     "input": [
         {
             "role": "user",
             "content": [
                 {
                     "type": "text",
-                    "text": "现在几点了"
+                    "text": "这是什么"
+                },
+                {
+                    "type": "image",
+                    "image_url": ""
                 }
             ]
         }
