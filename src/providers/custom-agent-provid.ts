@@ -194,9 +194,23 @@ function transformStreamingDataToOpenAIFormat(
                 }],
             };
         } else if (data.object === 'plugin_call') {
-            // 处理插件调用，暂时转换为普通消息
+            // 处理插件调用，保留完整的插件信息结构
             const pluginData = data.content?.find((item: any) => item.type === 'data')?.data;
             if (pluginData) {
+                // 创建一个特殊的插件调用标记，包含完整的插件信息
+                const pluginContent = {
+                    type: 'plugin_call',
+                    pluginName: pluginData.name || 'unknown',
+                    pluginStatus: data.status || 'created',
+                    pluginData: pluginData,
+                    pluginId: data.id,
+                    timestamp: data.created_at || Math.floor(Date.now() / 1000)
+                };
+
+                // 使用特殊的标记来包围插件 JSON，便于前端识别
+                const jsonContent = JSON.stringify(pluginContent);
+                const markedContent = `\u0001PLUGIN_CALL_START\u0001${jsonContent}\u0001PLUGIN_CALL_END\u0001`;
+
                 return {
                     id: data.id || `chatcmpl-${Date.now()}`,
                     object: 'chat.completion.chunk',
@@ -204,7 +218,9 @@ function transformStreamingDataToOpenAIFormat(
                     model: 'custom-agent',
                     choices: [{
                         index: 0,
-                        delta: { content: `[Plugin Call: ${pluginData.name || 'unknown'}]` },
+                        delta: {
+                            content: markedContent
+                        },
                         finish_reason: null,
                     }],
                 };
