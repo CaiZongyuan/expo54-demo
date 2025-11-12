@@ -115,18 +115,6 @@ export default function ChatBotScreen() {
           >
             <Ionicons name="add" size={24} color="white" />
           </TouchableOpacity>
-          {/* <TouchableOpacity
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 100,
-              backgroundColor: "rgba(255, 255, 255, 0.25)",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <Ionicons name="ellipsis-horizontal" size={24} color="white" />
-          </TouchableOpacity> */}
         </View>
       </View>
 
@@ -206,33 +194,6 @@ export default function ChatBotScreen() {
                               >
                                 {part.text}
                               </Text>
-                            );
-                          case "tool-weather":
-                          case "tool-convertFahrenheitToCelsius":
-                            return (
-                              <View
-                                key={`${m.id}-${i}`}
-                                style={{
-                                  backgroundColor: "rgba(255, 255, 255, 0.22)",
-                                  borderRadius: 25,
-                                  paddingHorizontal: 16,
-                                  paddingVertical: 8,
-                                  marginVertical: 4,
-                                  alignSelf: "flex-start",
-                                }}
-                              >
-                                <Text
-                                  style={{
-                                    fontSize: 12,
-                                    color: "white",
-                                  }}
-                                >
-                                  调用工具：
-                                  {part.type === "tool-weather"
-                                    ? "天气查询"
-                                    : "温度转换"}
-                                </Text>
-                              </View>
                             );
                         }
                       })}
