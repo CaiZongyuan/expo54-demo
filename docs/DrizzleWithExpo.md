@@ -6,6 +6,7 @@ Install expo-sqlite package (if it has not been done)
 
 ```bash
 bunx expo install expo-sqlite
+
 bun add drizzle-orm
 bun add -D drizzle-kit
 ```
@@ -187,3 +188,27 @@ export default function App() {
   );
 }
 ```
+
+📋 Drizzle ORM + Expo 实践经验总结
+
+✅ 成功的关键因素
+
+1. 正确的配置顺序
+    - 先安装依赖：expo-sqlite, drizzle-orm, drizzle-kit, babel-plugin-inline-import
+    - 然后配置：drizzle.config.ts, metro.config.js, babel.config.js
+    - 最后生成迁移：bunx drizzle-kit generate
+2. 迁移文件管理
+    - 使用Drizzle自动生成的 migrations.js 文件
+    - 不要手动创建 migrations.ts 文件
+    - 让Drizzle管理所有迁移相关的文件
+3. 错误处理策略
+    - 迁移失败时：删除整个 drizzle 目录重新生成
+    - SQL语法问题：Drizzle会自动处理SQLite语法
+    - 类型安全：使用Zod类型推断
+
+⚠️ 常见陷阱
+
+1. 手动修改迁移文件 - 导致格式错误
+2. 使用 jotai-tanstack-query - 过度复杂化，原生Jotai足够
+3. 忽略外键顺序 - Drizzle会自动处理
+4. 不正确的导入路径 - 使用相对路径导入迁移文件

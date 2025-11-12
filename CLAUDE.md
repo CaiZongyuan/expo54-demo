@@ -7,40 +7,6 @@
 **Package Manager**: Bun (confirmed by bun.lock file and README documentation)  
 **Platform**: Cross-platform (iOS, Android, Web)
 
-## Project Structure
-
-### Root Directory Structure
-```
-D:\Projects\Frontend_tech\ReactNatvie\as_test├── app/                          # Expo Router file-based navigation system
-├── app-example/                  # Example components and demo pages
-├── assets/                       # Static assets (images, fonts, etc.)
-│   └── images/                   # Image assets for app icons, splash, etc.
-├── .vscode/                      # VS Code configuration
-├── docs/                         # Documentation directory (currently empty)
-├── .expo/                        # Expo configuration and build data
-├── node_modules/                 # Dependencies
-├── bun.lock                      # Bun lock file (package manager)
-├── package.json                  # Dependencies and scripts
-├── app.json                      # Expo app configuration
-├── tsconfig.json                 # TypeScript configuration
-├── tailwind.config.js           # Tailwind CSS configuration
-├── babel.config.js              # Babel configuration
-├── metro.config.js               # Metro bundler configuration
-├── eslint.config.js             # ESLint configuration
-└── README.md                     # Project documentation (Chinese)
-```
-
-### App Directory Structure
-```
-app/
-├── _layout.tsx           # Root layout with navigation stack
-├── index.tsx             # Home screen (currently empty template)
-├── components/           # Reusable components (currently empty)
-├── hooks/                # Custom React hooks (currently empty)
-└── pages/                # App pages (currently empty)
-├── global.css            # Tailwind CSS imports
-```
-
 ## Technology Stack & Dependencies
 
 ### Core Framework
@@ -79,24 +45,6 @@ app/
 - **Babel**: With Expo preset and NativeWind
 
 ## Configuration Files
-
-### app.json - Expo Configuration
-```json
-{
-  "expo": {
-    "name": "as_test",
-    "slug": "as_test",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "newArchEnabled": true,  // New React Native Architecture
-    "experiments": {
-      "typedRoutes": true,    // TypeScript for routes
-      "reactCompiler": true  // React Compiler experimental
-    },
-    "plugins": ["expo-router", "expo-splash-screen", "expo-sqlite"]
-  }
-}
-```
 
 ### Babel Configuration
 - Uses `babel-preset-expo` with JSX import source set to NativeWind
@@ -170,16 +118,6 @@ Based on the README, Bun is the package manager:
 bun install
 bun start
 
-# Or using npm
-npm install
-npm start
-
-# Platform-specific
-bun run android  # Android development
-bun run ios     # iOS development
-bun run web     # Web development
-```
-
 ### Key Development Commands
 ```bash
 bun lint          # Run ESLint
@@ -196,8 +134,9 @@ expo start        # Start Expo development server
 4. **Bun as Package Manager**: All commands should use bun when possible
 5. **Context7 MCP**: Instructions mention using context7 MCP for function searches. Also, you can create a markdown file for the technical analysis, kind of like the ./docs/DrizzleWithExpo.md one in the docs folder.
 6. **Drizzle**: Before you use Drizzle, you must read [DrizzleWithExpo.md](docs/DrizzleWithExpo.md) to understand how to use it
-7. Please ensure that the CLAUDE.md file is updated regularly.
-8. Please conduct all analysis and processing in English, while providing all communication to the user in Chinese.
+7. **ReactNativeGuide**: Before you use ReactNativeGuide, you must read [ReactNativeGuide.md](docs/ReactNativeGuide.md) to understand how to use it
+8. Please ensure that the CLAUDE.md file is updated regularly
+9. Please conduct all analysis and processing in English, while providing all communication to the user in Chinese
 
 ### Architecture Status
 - The project is in early development stages with most directories empty
@@ -227,4 +166,3 @@ expo start        # Start Expo development server
 - Use Jotai atoms for shared state
 - Implement proper data fetching with TanStack Query
 - Use Zod schemas for validation
-

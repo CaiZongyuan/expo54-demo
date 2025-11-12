@@ -1,0 +1,1 @@
+- Make sure all text is wrapped in <Text></Text> tags.
