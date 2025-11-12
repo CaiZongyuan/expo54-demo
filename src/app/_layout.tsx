@@ -1,6 +1,7 @@
 import * as Sentry from "@sentry/react-native";
 import { Slot } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "./global.css";
 
 Sentry.init({
@@ -27,8 +28,10 @@ Sentry.init({
 
 export default Sentry.wrap(function RootLayout() {
   return (
-    <SafeAreaProvider style={{ height: "100%" }}>
-      <Slot />
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider style={{ height: "100%" }}>
+        <Slot />
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 });

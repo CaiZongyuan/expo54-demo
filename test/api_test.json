@@ -1,0 +1,15 @@
+{
+    "user_id": "wk",
+    "session_id": "002",
+    "input": [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "现在几点了"
+                }
+            ]
+        }
+    ]
+}
