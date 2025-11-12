@@ -18,8 +18,8 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { AIMessage, UserMessage } from "../../components/chat";
 import { generateAPIUrl } from "../../utils/fetch";
-import { PluginCard } from "../../components/chat/PluginCard";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -139,211 +139,15 @@ export default function ChatBotScreen() {
               {messages.map((m) => (
                 <View key={m.id} style={{ marginVertical: 4 }}>
                   {m.role === "user" ? (
-                    // 用户消息 - 右对齐，有背景气泡
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        justifyContent: "flex-end",
-                        paddingHorizontal: 8,
-                        paddingVertical: 8,
-                      }}
-                    >
-                      <View
-                        style={{
-                          maxWidth: "80%",
-                          backgroundColor: "rgba(45, 46, 53, 1)",
-                          borderRadius: 16,
-                          borderBottomRightRadius: 0,
-                          paddingHorizontal: 12,
-                          paddingVertical: 8,
-                        }}
-                      >
-                        {m.parts.map((part, i) => {
-                          switch (part.type) {
-                            case "text":
-                              return (
-                                <Text
-                                  key={`${m.id}-${i}`}
-                                  style={{
-                                    fontSize: 16,
-                                    color: "white",
-                                    lineHeight: 22,
-                                  }}
-                                >
-                                  {part.text}
-                                </Text>
-                              );
-                          }
-                        })}
-                      </View>
-                    </View>
+                    <UserMessage parts={m.parts} messageId={m.id} />
                   ) : (
-                    // AI消息 - 透明背景，横向铺满，左对齐
-                    <View style={{ width: "100%", paddingHorizontal: 16 }}>
-                      {m.parts.map((part, i) => {
-                        switch (part.type) {
-                          case "text":
-                            // 收集所有插件卡片和清理后的文本
-                            const pluginCards = [];
-                            let cleanText = part.text;
-
-                            // 检查特殊标记的插件内容
-                            const pluginCallMatch = part.text.match(/\u0001PLUGIN_CALL_START\u0001([\s\S]*?)\u0001PLUGIN_CALL_END\u0001/);
-                            const pluginResultMatch = part.text.match(/\u0001PLUGIN_RESULT_START\u0001([\s\S]*?)\u0001PLUGIN_RESULT_END\u0001/);
-
-                            if (pluginCallMatch && pluginCallMatch[1]) {
-                              try {
-                                const parsedContent = JSON.parse(pluginCallMatch[1]);
-                                pluginCards.push(
-                                  <PluginCard
-                                    key={`${m.id}-${i}-plugin-call-${parsedContent.pluginId || Math.random()}`}
-                                    data={parsedContent}
-                                    isCall={true}
-                                  />
-                                );
-                              } catch (e) {
-                                console.error('Failed to parse plugin call JSON:', e);
-                              }
-                            }
-
-                            if (pluginResultMatch && pluginResultMatch[1]) {
-                              try {
-                                const parsedContent = JSON.parse(pluginResultMatch[1]);
-                                pluginCards.push(
-                                  <PluginCard
-                                    key={`${m.id}-${i}-plugin-result-${parsedContent.pluginId || Math.random()}`}
-                                    data={parsedContent}
-                                    isCall={false}
-                                  />
-                                );
-                              } catch (e) {
-                                console.error('Failed to parse plugin result JSON:', e);
-                              }
-                            }
-
-                            // 如果没有找到标记的内容，尝试解析连接的 JSON 对象
-                            if (pluginCards.length === 0) {
-                              // 查找所有可能的 JSON 对象起始位置
-                              const jsonStartRegex = /\{"type":"plugin_(call|result)"/g;
-                              const matches = [];
-                              let match;
-
-                              while ((match = jsonStartRegex.exec(part.text)) !== null) {
-                                const startIndex = match.index;
-                                // 找到这个 JSON 对象的结束位置
-                                let braceCount = 0;
-                                let endIndex = startIndex;
-                                let inString = false;
-                                let escapeChar = false;
-
-                                for (let j = startIndex; j < part.text.length; j++) {
-                                  const char = part.text[j];
-
-                                  if (escapeChar) {
-                                    escapeChar = false;
-                                    continue;
-                                  }
-
-                                  if (char === '\\') {
-                                    escapeChar = true;
-                                    continue;
-                                  }
-
-                                  if (char === '"' && !escapeChar) {
-                                    inString = !inString;
-                                    continue;
-                                  }
-
-                                  if (!inString) {
-                                    if (char === '{') {
-                                      braceCount++;
-                                    } else if (char === '}') {
-                                      braceCount--;
-                                      if (braceCount === 0) {
-                                        endIndex = j + 1;
-                                        break;
-                                      }
-                                    }
-                                  }
-                                }
-
-                                if (braceCount === 0 && endIndex > startIndex) {
-                                  const jsonStr = part.text.substring(startIndex, endIndex);
-                                  matches.push(jsonStr);
-                                  // 继续搜索下一个 JSON 对象
-                                  jsonStartRegex.lastIndex = endIndex;
-                                }
-                              }
-
-                              // 解析找到的 JSON 对象
-                              if (matches.length > 0) {
-                                for (const jsonStr of matches) {
-                                  try {
-                                    const parsedContent = JSON.parse(jsonStr);
-                                    if (parsedContent.type === 'plugin_call') {
-                                      pluginCards.push(
-                                        <PluginCard
-                                          key={`${m.id}-${i}-plugin-call-${parsedContent.pluginId || Math.random()}`}
-                                          data={parsedContent}
-                                          isCall={true}
-                                        />
-                                      );
-                                    } else if (parsedContent.type === 'plugin_result') {
-                                      pluginCards.push(
-                                        <PluginCard
-                                          key={`${m.id}-${i}-plugin-result-${parsedContent.pluginId || Math.random()}`}
-                                          data={parsedContent}
-                                          isCall={false}
-                                        />
-                                      );
-                                    }
-                                  } catch (e) {
-                                    console.warn('Failed to parse extracted JSON:', jsonStr.substring(0, 100) + '...', e);
-                                  }
-                                }
-                              }
-                            }
-
-                            // 过滤掉所有特殊标记和 JSON 内容，只显示纯文本
-                            // 移除特殊标记
-                            cleanText = cleanText.replace(/\u0001PLUGIN_CALL_START\u0001[\s\S]*?\u0001PLUGIN_CALL_END\u0001/g, '');
-                            cleanText = cleanText.replace(/\u0001PLUGIN_RESULT_START\u0001[\s\S]*?\u0001PLUGIN_RESULT_END\u0001/g, '');
-
-                            // 移除常规 JSON 内容（包括连接的 JSON 对象）
-                            cleanText = cleanText.replace(/\{"type":"plugin_(call|result)"[\s\S]*?(?=\{"type":"plugin_(call|result)"|$)/g, '');
-
-                            cleanText = cleanText.trim();
-
-                            // 返回所有插件卡片和清理后的文本
-                            return (
-                              <View key={`${m.id}-${i}`}>
-                                {pluginCards}
-                                {cleanText && (
-                                  <Text
-                                    style={{
-                                      fontSize: 16,
-                                      color: "white",
-                                      lineHeight: 22,
-                                      marginVertical: 4,
-                                    }}
-                                  >
-                                    {cleanText}
-                                  </Text>
-                                )}
-                              </View>
-                            );
-
-                          default:
-                            return null;
-                        }
-                      })}
-                    </View>
+                    <AIMessage parts={m.parts} messageId={m.id} />
                   )}
                 </View>
               ))}
 
               {/* 显示状态指示器 */}
-              {(status === "submitted" || status === "streaming") && (
+              {status === "submitted" && (
                 <View
                   style={{
                     backgroundColor: "rgba(255, 255, 255, 0.22)",
