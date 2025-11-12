@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>星绪聊天界面</title>
+  <link rel="stylesheet" href="css/font.css">
+  <script src="js/animation.js"></script>
+  <style>
+:root,
+[data-collection-3081-779-mode="light"] {
+  /* Light */
+  --miscellaneous-kit-section-fill: rgba(245, 245, 245, 255);
+}
+
+[data-collection-3081-779-mode="dark"] {
+  /* Dark */
+  --miscellaneous-kit-section-fill: rgba(245, 245, 245, 255);
+}
+
+[data-collection-3081-779-mode="dark-elevated"] {
+  /* Dark Elevated */
+  --miscellaneous-kit-section-fill: rgba(245, 245, 245, 255);
+}
+
+[data-collection-3081-779-mode="ic-light"] {
+  /* IC - Light */
+  --miscellaneous-kit-section-fill: rgba(245, 245, 245, 255);
+}
+
+[data-collection-3081-779-mode="ic-dark"] {
+  /* IC - Dark */
+  --miscellaneous-kit-section-fill: rgba(245, 245, 245, 255);
+}
+
+[data-collection-3081-779-mode="ic-dark-elevated"] {
+  /* IC - Dark Elevated */
+  --miscellaneous-kit-section-fill: rgba(245, 245, 245, 255);
+}
+
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background-color: white;
+}
+
+span {
+  word-break: break-word;
+}
+
+.scroll-container-0_1 {
+  height: 100%;
+  width: 100%;
+  overflow: auto;
+}
+
+.canvas-0_1 {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  left: 0px;
+  top: 0px;
+}
+
+.frame-35_3356 {
+  width: 402px;
+  height: 874px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.frame-35_3362 {
+  width: 402px;
+  height: 874px;
+  overflow: hidden;
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 67px 0px 0px 0px;
+  backdrop-filter: blur(3.3333333333333335px);
+  background-color: rgba(25, 25, 25, 1);
+}
+
+.frame-35_3374 {
+  width: 402px;
+  height: 44px;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 77px;
+  justify-content: center;
+  align-items: flex-start;
+  background-color: rgba(25, 25, 25, 1);
+}
+
+.frame-36_3418 {
+  width: 44px;
+  height: auto;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.frame-36_3385 {
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  border-radius: 100px 100px 100px 100px;
+  background-color: rgba(255, 255, 255, 0.25);
+}
+
+.frame-36_3386 {
+  width: 24px;
+  height: 24px;
+  overflow: hidden;
+  position: absolute;
+  left: 10.000000000000002px;
+  top: 10px;
+  transform: rotate(-90deg);
+  background-color: transparent;
+}
+
+.vector-36_3387 {
+  width: 100%;
+  height: 100%;
+  background-image: url("http://localhost:3667/assets/Vector_36_3387.png");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  position: absolute;
+  left: 0%;
+  right: 0%;
+  top: 0%;
+  bottom: 0%;
+}
+
+.vector-36_3388 {
+  width: 50%;
+  height: 25%;
+  background-image: url("http://localhost:3667/assets/Vector_36_3388.png");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  position: absolute;
+  left: 25%;
+  right: 25%;
+  top: 37.5%;
+  bottom: 37.5%;
+}
+
+.text-35_3379 {
+  font-size: 24px;
+  font-family: Alibaba PuHuiTi;
+  font-weight: 400;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  line-height: 22px;
+  color: rgba(255, 255, 255, 1);
+  width: 96px;
+  height: 44px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.frame-36_3351 {
+  width: 96px;
+  height: auto;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.frame-36_3348 {
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  border-radius: 100px 100px 100px 100px;
+  background-color: rgba(255, 255, 255, 0.25);
+}
+
+.frame-36_3349 {
+  width: 54.54%;
+  height: 24px;
+  position: absolute;
+  left: 22.73%;
+  right: 22.73%;
+  top: 10px;
+  background-color: transparent;
+}
+
+.frame-36_3345 {
+  width: 30px;
+  height: 30px;
+  overflow: hidden;
+  position: absolute;
+  left: 7px;
+  top: 7px;
+}
+
+.vector-36_3346 {
+  width: 46.66%;
+  height: 46.66%;
+  background-image: url("http://localhost:3667/assets/Vector_36_3346.png");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  position: absolute;
+  left: 36.67%;
+  right: 16.67%;
+  top: 16.67%;
+  bottom: 36.67%;
+}
+
+.vector-36_3347 {
+  width: 66.66%;
+  height: 66.66%;
+  background-image: url("http://localhost:3667/assets/Vector_36_3347.png");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  position: absolute;
+  left: 16.67%;
+  right: 16.67%;
+  top: 16.67%;
+  bottom: 16.67%;
+}
+
+.frame-35_3380 {
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  border-radius: 100px 100px 100px 100px;
+  background-color: rgba(255, 255, 255, 0.25);
+}
+
+.frame-36_3364 {
+  width: 68.18%;
+  height: 68.18%;
+  position: absolute;
+  left: -52.27%;
+  right: 84.09%;
+  top: 15.91%;
+  bottom: 15.91%;
+  transform: rotate(90.00000155636428deg);
+}
+
+.rectangle-36_3365 {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  left: 0%;
+  right: 0%;
+  top: 0%;
+  bottom: 0%;
+  background-color: transparent;
+}
+
+.vector-36_3366 {
+  width: 12.5%;
+  height: 75%;
+  background-image: url("http://localhost:3667/assets/Boolean_operation_36_3366.png");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  position: absolute;
+  left: 43.75%;
+  right: 43.75%;
+  top: 12.5%;
+  bottom: 12.5%;
+}
+
+.frame-36_3533 {
+  width: 402px;
+  height: auto;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 8px 8px 8px 8px;
+}
+
+.frame-36_3433 {
+  width: 272px;
+  height: auto;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 8px 8px 8px 8px;
+  border-radius: 16px 16px 0px 16px;
+  background-color: rgba(45, 46, 53, 1);
+}
+
+.text-35_3367 {
+  font-size: 12px;
+  font-family: Alibaba PuHuiTi;
+  font-weight: 400;
+  letter-spacing: 0em;
+  color: rgba(255, 255, 255, 1);
+  width: 256px;
+  height: auto;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.frame-36_3434 {
+  width: 100%;
+  height: auto;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 9px 8px 8px;
+}
+
+.text-35_3366 {
+  font-size: 12px;
+  font-family: Alibaba PuHuiTi;
+  font-weight: 400;
+  letter-spacing: 0em;
+  color: rgba(255, 255, 255, 1);
+  width: auto;
+  height: auto;
+  position: relative;
+  flex-shrink: 1;
+  flex-grow: 1;
+}
+
+.frame-36_3536 {
+  width: 402px;
+  height: auto;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 8px 8px 8px 8px;
+}
+
+.frame-36_3537 {
+  width: 272px;
+  height: auto;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 8px 8px 8px 8px;
+  border-radius: 16px 16px 0px 16px;
+  background-color: rgba(45, 46, 53, 1);
+}
+
+.text-36_3538 {
+  font-size: 12px;
+  font-family: Alibaba PuHuiTi;
+  font-weight: 400;
+  letter-spacing: 0em;
+  color: rgba(255, 255, 255, 1);
+  width: 256px;
+  height: auto;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.frame-36_3557 {
+  width: 100%;
+  height: auto;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 4px 0px 4px 8px;
+}
+
+.frame-36_3547 {
+  width: 119px;
+  height: auto;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 31px 8px 8px;
+  border-radius: 25px 25px 25px 25px;
+  background-color: rgba(255, 255, 255, 0.2199999988079071);
+}
+
+.text-36_3548 {
+  font-size: 12px;
+  font-family: Alibaba PuHuiTi;
+  font-weight: 400;
+  letter-spacing: 0em;
+  color: rgba(255, 255, 255, 1);
+  width: auto;
+  height: auto;
+  position: relative;
+  flex-shrink: 0;
+  white-space: pre;
+  flex-grow: 0;
+}
+
+.frame-36_3558 {
+  width: 100%;
+  height: auto;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 4px 0px 4px 8px;
+}
+
+.frame-36_3559 {
+  width: 176px;
+  height: auto;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 31px 8px 8px;
+  border-radius: 25px 25px 25px 25px;
+  background-color: rgba(255, 255, 255, 0.2199999988079071);
+}
+
+.text-36_3560 {
+  font-size: 12px;
+  font-family: Alibaba PuHuiTi;
+  font-weight: 400;
+  letter-spacing: 0em;
+  color: rgba(255, 255, 255, 1);
+  width: auto;
+  height: auto;
+  position: relative;
+  flex-shrink: 0;
+  white-space: pre;
+  flex-grow: 0;
+}
+
+.frame-36_3563 {
+  width: 100%;
+  height: auto;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 4px 0px 4px 8px;
+}
+
+.frame-36_3564 {
+  width: 169px;
+  height: auto;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 31px 8px 8px;
+  border-radius: 25px 25px 25px 25px;
+  background-color: rgba(255, 255, 255, 0.2199999988079071);
+}
+
+.text-36_3565 {
+  font-size: 12px;
+  font-family: Alibaba PuHuiTi;
+  font-weight: 400;
+  letter-spacing: 0em;
+  color: rgba(255, 255, 255, 1);
+  width: auto;
+  height: auto;
+  position: relative;
+  flex-shrink: 0;
+  white-space: pre;
+  flex-grow: 0;
+}
+
+.frame-36_3569 {
+  width: 100%;
+  height: auto;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 4px 0px 4px 8px;
+}
+
+.frame-36_3570 {
+  width: 119px;
+  height: auto;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 31px 8px 8px;
+  border-radius: 25px 25px 25px 25px;
+  background-color: rgba(255, 255, 255, 0.2199999988079071);
+}
+
+.text-36_3571 {
+  font-size: 12px;
+  font-family: Alibaba PuHuiTi;
+  font-weight: 400;
+  letter-spacing: 0em;
+  color: rgba(255, 255, 255, 1);
+  width: auto;
+  height: auto;
+  position: relative;
+  flex-shrink: 0;
+  white-space: pre;
+  flex-grow: 0;
+}
+
+.frame-36_3572 {
+  width: 100%;
+  height: auto;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 8px 8px 8px;
+}
+
+.text-36_3573 {
+  font-size: 12px;
+  font-family: Alibaba PuHuiTi;
+  font-weight: 400;
+  letter-spacing: 0em;
+  color: rgba(255, 255, 255, 1);
+  width: auto;
+  height: auto;
+  position: relative;
+  flex-shrink: 1;
+  flex-grow: 1;
+}
+
+.frame-36_3579 {
+  width: 100%;
+  height: auto;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 0px 8px 0px 8px;
+}
+
+.frame-36_3574 {
+  width: 146px;
+  height: auto;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+.text-36_3575 {
+  font-size: 10px;
+  font-family: Alibaba PuHuiTi;
+  font-weight: 400;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  letter-spacing: 0em;
+  color: rgba(169, 169, 169, 1);
+  width: 130px;
+  height: 16px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.frame-36_3576 {
+  width: 16px;
+  height: 16px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.frame-36_3577 {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  left: 0%;
+  right: 0%;
+  top: 0%;
+  bottom: 0%;
+}
+
+.vector-36_3578 {
+  width: 84.59%;
+  height: 74.17%;
+  background-image: url("http://localhost:3667/assets/Vector_36_3578.png");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  position: absolute;
+  left: 8.33%;
+  right: 7.08%;
+  top: 12.5%;
+  bottom: 13.33%;
+}
+
+.frame-36_3593 {
+  width: 100%;
+  height: auto;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 12px 8px 12px 8px;
+}
+
+.frame-36_3594 {
+  width: 168px;
+  height: auto;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.text-36_3595 {
+  font-size: 10px;
+  font-family: Alibaba PuHuiTi;
+  font-weight: 400;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  letter-spacing: 0em;
+  color: rgba(169, 169, 169, 1);
+  width: auto;
+  height: auto;
+  position: relative;
+  flex-shrink: 0;
+  white-space: pre;
+  flex-grow: 0;
+}
+
+.frame-36_3580 {
+  width: 100%;
+  height: auto;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  padding: 91px 0px 0px 0px;
+}
+
+.frame-36_3534 {
+  width: 357px;
+  height: auto;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
+.frame-36_3435 {
+  width: 328px;
+  height: auto;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 8px 8px 8px 8px;
+}
+
+.text-35_3403 {
+  font-size: 16px;
+  font-family: Alibaba PuHuiTi;
+  font-weight: 400;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  letter-spacing: 0em;
+  color: rgba(255, 255, 255, 1);
+  width: 72px;
+  height: 24px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.text-35_3404 {
+  font-size: 16px;
+  font-family: Alibaba PuHuiTi;
+  font-weight: 400;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  letter-spacing: 0em;
+  color: rgba(255, 255, 255, 1);
+  width: 72px;
+  height: 24px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.text-35_3405 {
+  font-size: 16px;
+  font-family: Alibaba PuHuiTi;
+  font-weight: 400;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  letter-spacing: 0em;
+  color: rgba(255, 255, 255, 1);
+  width: 72px;
+  height: 24px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.text-35_3406 {
+  font-size: 16px;
+  font-family: Alibaba PuHuiTi;
+  font-weight: 400;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  letter-spacing: 0em;
+  color: rgba(255, 255, 255, 1);
+  width: 72px;
+  height: 24px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.frame-36_3436 {
+  width: 357px;
+  height: auto;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  align-items: center;
+}
+
+.frame-35_3382 {
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  border-radius: 25px 25px 25px 25px;
+  background-color: rgba(255, 255, 255, 0.20000000298023224);
+}
+
+.frame-35_3383 {
+  width: 66.66%;
+  height: 66.66%;
+  position: absolute;
+  left: 16.67%;
+  right: 16.67%;
+  top: 16.67%;
+  bottom: 16.67%;
+  background-color: transparent;
+}
+
+.vector-36_1 {
+  width: 72.92%;
+  height: 72.92%;
+  background-image: url("http://localhost:3667/assets/Vector_36_1.png");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  position: absolute;
+  left: 12.5%;
+  right: 14.58%;
+  top: 12.5%;
+  bottom: 14.58%;
+}
+
+.frame-36_3438 {
+  width: 301px;
+  height: auto;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 68px;
+  align-items: center;
+  padding: 0px 0px 0px 16px;
+  border-radius: 50px 50px 50px 50px;
+  background-color: rgba(217, 217, 217, 1);
+}
+
+.text-35_3386 {
+  font-size: 16px;
+  font-family: Alibaba PuHuiTi;
+  font-weight: 400;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  letter-spacing: 0em;
+  color: rgba(169, 169, 169, 0.699999988079071);
+  width: 113px;
+  height: 40px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.frame-36_3439 {
+  width: 108.40505981445312px;
+  height: auto;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 0px 18px 0px 18px;
+}
+
+.frame-35_3387 {
+  width: 32.20252990722656px;
+  height: 32px;
+  position: relative;
+  flex-shrink: 0;
+  background-color: transparent;
+}
+
+.vector-36_2 {
+  width: 65.92%;
+  height: 87.5%;
+  background-image: url("http://localhost:3667/assets/Vector_36_2.png");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  position: absolute;
+  left: 16.67%;
+  right: 17.41%;
+  top: 8.33%;
+  bottom: 4.17%;
+}
+
+.frame-35_3388 {
+  width: 32.20252990722656px;
+  height: 32px;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  border-radius: 25px 25px 25px 25px;
+  background-color: rgba(0, 0, 0, 0.800000011920929);
+}
+
+.frame-35_3389 {
+  width: 66.66%;
+  height: 66.66%;
+  position: absolute;
+  left: 16.67%;
+  right: 16.67%;
+  top: 16.67%;
+  bottom: 16.67%;
+  background-color: transparent;
+}
+
+.group-35_3390 {
+  width: 40.63%;
+  height: 53.12%;
+  position: absolute;
+  left: 29.68%;
+  right: 29.69%;
+  top: 21.88%;
+  bottom: 25%;
+}
+
+.vector-35_3391 {
+  width: 68.79%;
+  height: 0%;
+  background-image: url("http://localhost:3667/assets/Line_35_3391.png");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  position: absolute;
+  left: -34.39%;
+  right: 65.6%;
+  top: 50%;
+  bottom: 50%;
+}
+
+.vector-35_3392 {
+  width: 68.79%;
+  height: 0%;
+  background-image: url("http://localhost:3667/assets/Line_35_3392.png");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  position: absolute;
+  left: 65.6%;
+  right: -34.39%;
+  top: 50%;
+  bottom: 50%;
+}
+
+.vector-35_3393 {
+  width: 99.36%;
+  height: 0%;
+  background-image: url("http://localhost:3667/assets/Line_35_3393.png");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  position: absolute;
+  left: -24.68%;
+  right: 25.32%;
+  top: 50%;
+  bottom: 50%;
+}
+
+.vector-35_3394 {
+  width: 99.36%;
+  height: 0%;
+  background-image: url("http://localhost:3667/assets/Line_35_3394.png");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  position: absolute;
+  left: 25.32%;
+  right: -24.68%;
+  top: 50%;
+  bottom: 50%;
+}
+
+.vector-35_3395 {
+  width: 129.94%;
+  height: 0%;
+  background-image: url("http://localhost:3667/assets/Line_35_3395.png");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  position: absolute;
+  left: -14.97%;
+  right: -14.97%;
+  top: 50%;
+  bottom: 50%;
+}
+
+.frame-35_3408 {
+  width: 402px;
+  height: 874px;
+  position: absolute;
+  left: 0px;
+  top: 0px;
+}
+
+.rectangle-36_816 {
+  width: 450px;
+  height: 920px;
+  position: absolute;
+  left: -24px;
+  top: -23px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-image: url("http://localhost:3667/assets/85a8d4cb5dd8334894f69f8c4156fea900e1fc9a.png");
+}
+
+.container {
+  width: 100%;
+  height: 100%;
+  max-width: 100vw;
+  margin: 0 auto;
+}
+
+.container > * {
+  width: 100%;
+  height: 100%;
+}
+
+/* 响应式布局 */
+@media (max-width: 480px) {
+  .frame-35_3356,
+  .frame-35_3362 {
+    width: 100vw;
+    height: 100vh;
+  }
+
+  .frame-35_3374 {
+    width: 100%;
+    padding: 0 16px;
+  }
+
+  .frame-36_3433,
+  .frame-36_3537 {
+    width: calc(100% - 32px);
+    max-width: 320px;
+  }
+
+  .frame-36_3534 {
+    width: calc(100% - 32px);
+  }
+
+  .frame-36_3438 {
+    width: calc(100% - 48px);
+  }
+}
+
+@media (min-width: 768px) {
+  .frame-35_3356 {
+    width: 402px;
+    height: 874px;
+    margin: 0 auto;
+  }
+
+  .frame-35_3362 {
+    width: 402px;
+    height: 874px;
+    margin: 0 auto;
+  }
+}
+
+/* 图标基础样式 */
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.icon:hover {
+  opacity: 0.8;
+  transform: scale(1.05);
+}
+
+/* 菜单图标（三道横杠） */
+.menu-icon {
+  width: 20px;
+  height: 16px;
+  position: relative;
+}
+
+.menu-icon span {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background-color: rgba(255, 255, 255, 1);
+  border-radius: 1px;
+  position: absolute;
+  left: 0;
+  transition: all 0.3s ease;
+}
+
+.menu-icon span:nth-child(1) {
+  top: 0;
+}
+
+.menu-icon span:nth-child(2) {
+  top: 7px;
+}
+
+.menu-icon span:nth-child(3) {
+  bottom: 0;
+}
+
+/* 新增图标 */
+.add-icon {
+  width: 20px;
+  height: 20px;
+  position: relative;
+}
+
+.add-icon::before,
+.add-icon::after {
+  content: '';
+  position: absolute;
+  background-color: rgba(255, 255, 255, 1);
+  border-radius: 1px;
+}
+
+.add-icon::before {
+  width: 100%;
+  height: 2px;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+}
+
+.add-icon::after {
+  width: 2px;
+  height: 100%;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+}
+
+/* 更多图标（三个点） */
+.more-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2px;
+}
+
+.more-icon span {
+  width: 4px;
+  height: 4px;
+  background-color: rgba(255, 255, 255, 1);
+  border-radius: 50%;
+}
+
+/* 语音图标 */
+.voice-icon {
+  width: 20px;
+  height: 20px;
+  position: relative;
+}
+
+.voice-icon .main {
+  width: 12px;
+  height: 16px;
+  background-color: rgba(255, 255, 255, 1);
+  border-radius: 6px;
+  position: absolute;
+  left: 4px;
+  top: 2px;
+}
+
+.voice-icon .side-left,
+.voice-icon .side-right {
+  position: absolute;
+  width: 8px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 1);
+  border-radius: 50%;
+  top: 4px;
+}
+
+.voice-icon .side-left {
+  left: -2px;
+  border-right: none;
+}
+
+.voice-icon .side-right {
+  right: -2px;
+  border-left: none;
+}
+
+/* 发送图标 */
+.send-icon {
+  width: 20px;
+  height: 20px;
+  position: relative;
+}
+
+.send-icon::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-left: 12px solid rgba(255, 255, 255, 1);
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  top: 4px;
+  left: 2px;
+  transform: rotate(-30deg);
+}
+
+  </style>
+</head>
+<body>
+<div class="scroll-container-0_1">
+  <div id="0_1" class="canvas-0_1">
+    <div id="35_3356" class="frame-35_3356">
+      <div id="35_3362" class="frame-35_3362">
+        <div id="35_3374" class="frame-35_3374">
+          <div id="36_3418" class="frame-36_3418">
+            <div id="36_3385" class="frame-36_3385">
+              <div class="icon menu-icon">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </div>
+          </div>
+          <span id="35_3379" class="text-35_3379">星绪</span>
+          <div id="36_3351" class="frame-36_3351">
+            <div id="36_3348" class="frame-36_3348">
+              <div class="icon add-icon"></div>
+            </div>
+            <div id="35_3380" class="frame-35_3380">
+              <div class="icon more-icon">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="36_3533" class="frame-36_3533">
+          <div id="36_3433" class="frame-36_3433">
+            <span id="35_3367" class="text-35_3367">好的，我学会了，谢谢你！小绪，我还有一个问题，那我平常应该在饮食方面注意哪些？运动的话推荐哪一项呢？</span>
+          </div>
+        </div>
+        <div id="36_3434" class="frame-36_3434">
+          <span id="35_3366" class="text-35_3366">甲状腺结节是在甲状腺内形成的固体或充满液体的肿块。甲状腺是一个位于颈部底部的蝴蝶形小腺体，在喉结的下方，负责分泌调节人体新陈代谢的甲状腺激素。不必将结节与癌症划等号。事实上，只有大约5%的甲状腺结节是恶性的。</span>
+        </div>
+        <div id="36_3536" class="frame-36_3536">
+          <div id="36_3537" class="frame-36_3537">
+            <span id="36_3538" class="text-36_3538">今天是什么日子？历史上的今天发生了什么值得纪念的事情呢？</span>
+          </div>
+        </div>
+        <div id="36_3557" class="frame-36_3557">
+          <div id="36_3547" class="frame-36_3547">
+            <span id="36_3548" class="text-36_3548">正在思考 10 秒</span>
+          </div>
+        </div>
+        <div id="36_3558" class="frame-36_3558">
+          <div id="36_3559" class="frame-36_3559">
+            <span id="36_3560" class="text-36_3560">调用工具：Time checked</span>
+          </div>
+        </div>
+        <div id="36_3563" class="frame-36_3563">
+          <div id="36_3564" class="frame-36_3564">
+            <span id="36_3565" class="text-36_3565">联网搜索：重大历史时间</span>
+          </div>
+        </div>
+        <div id="36_3569" class="frame-36_3569">
+          <div id="36_3570" class="frame-36_3570">
+            <span id="36_3571" class="text-36_3571">正在思考 12 秒</span>
+          </div>
+        </div>
+        <div id="36_3572" class="frame-36_3572">
+          <span id="36_3573" class="text-36_3573">世界历史：<br>1936年-连接旧金山和奥克兰的日金山-奥克兰海湾大桥正式通车。<br>1970年-波拉气旋登陆东巴基斯坦，造成约30至50方人死亡，成为史上最致命的风灾 <br>1921年-华盛顿会议召开其中最受华人瞩自的是孙中山先生和华罗庚先生的诞辰，他们都是对中国历史和科学发展有重天责献的人物。</span>
+        </div>
+        <div id="36_3579" class="frame-36_3579">
+          <div id="36_3574" class="frame-36_3574">
+            <span id="36_3575" class="text-36_3575">您是否对小绪的回答满意呢？</span>
+            <div id="36_3576" class="frame-36_3576">
+              <div id="36_3577" class="frame-36_3577">
+                <div id="36_3578" class="vector-36_3578"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="36_3593" class="frame-36_3593">
+          <div id="36_3594" class="frame-36_3594">
+            <span id="36_3595" class="text-36_3595">人工智能回答有可能出错，请仔细甄别</span>
+          </div>
+        </div>
+        <div id="36_3580" class="frame-36_3580">
+          <div id="36_3534" class="frame-36_3534">
+            <div id="36_3435" class="frame-36_3435">
+              <span id="35_3403" class="text-35_3403">魔法日记</span>
+              <span id="35_3404" class="text-35_3404">答疑解惑</span>
+              <span id="35_3405" class="text-35_3405">新闻资讯</span>
+              <span id="35_3406" class="text-35_3406">待办任务</span>
+            </div>
+            <div id="36_3436" class="frame-36_3436">
+              <div id="35_3382" class="frame-35_3382">
+                <div id="35_3383" class="frame-35_3383">
+                  <div id="36_1" class="vector-36_1"></div>
+                </div>
+              </div>
+              <div id="36_3438" class="frame-36_3438">
+                <span id="35_3386" class="text-35_3386">请输入消息...</span>
+                <div id="36_3439" class="frame-36_3439">
+                  <div class="icon voice-icon">
+                    <div class="main"></div>
+                    <div class="side-left"></div>
+                    <div class="side-right"></div>
+                  </div>
+                  <div class="icon send-icon"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="35_3408" class="frame-35_3408">
+        <div id="36_816" class="rectangle-36_816"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+</body>
+</html>
