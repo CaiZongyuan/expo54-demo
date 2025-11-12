@@ -174,11 +174,19 @@ function transformStreamingDataToOpenAIFormat(
                 };
             }
         } else if (data.object === 'message' && data.role === 'assistant') {
-            // 处理实际的消息内容
+            // 处理实际的消息内容，但避免重复输出已流式显示的文本
             if (data.content && Array.isArray(data.content)) {
                 const textContent = data.content.find((item: any) => item.type === 'text' && item.text);
                 if (textContent) {
-                    delta.content = textContent.text;
+                    // 检查是否是已完成的消息，如果是，则不输出内容（避免与流式文本重复）
+                    if (data.status === 'completed') {
+                        // 对于已完成的消息，只发送结束标记，不重复内容
+                        finishReason = 'stop';
+                        delta = {}; // 空内容，避免重复
+                    } else {
+                        // 对于进行中的消息，正常输出内容
+                        delta.content = textContent.text;
+                    }
                 }
             }
 

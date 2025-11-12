@@ -1,0 +1,40 @@
+event: message
+data: {"sequence_number": 0, "object": "response", "status": "created", "id": "response_6e39e4fb-f7b5-421c-95a8-2695a61797ea", "created_at": 1762941912}
+
+event: message
+data: {"sequence_number": 1, "object": "response", "status": "in_progress", "id": "response_6e39e4fb-f7b5-421c-95a8-2695a61797ea", "created_at": 1762941912}
+
+event: plugin_call
+data: {"sequence_number": 2, "object": "plugin_call", "status": "completed", "id": "msg_a775048a-4818-4a8d-aef2-5ea2ac5dc709", "type": "plugin_call", "role": "assistant", "content": [{"object": "content", "type": "data", "delta": false, "data": {"type": "tool_use", "id": "call_dc5249a5328f40c0b92eb8b1", "name": "reset_equipped_tools", "input": {}}}]}
+
+event: plugin_call
+data: {"sequence_number": 3, "object": "plugin_call", "status": "completed", "id": "msg_30eb1393-ab15-453c-ae1c-a8ddc6735a03", "type": "plugin_call", "role": "assistant", "content": [{"object": "content", "type": "data", "delta": false, "data": {"type": "tool_use", "id": "call_dc5249a5328f40c0b92eb8b1", "name": "reset_equipped_tools", "input": {"builtin": true}}}]}
+
+event: plugin_call_output
+data: {"sequence_number": 4, "object": "plugin_call_output", "status": "completed", "id": "msg_02d9f54b-968d-4597-97ea-068c2b639eed", "type": "plugin_call_output", "role": "assistant", "content": [{"object": "content", "type": "data", "delta": false, "data": {"type": "tool_result", "id": "call_dc5249a5328f40c0b92eb8b1", "name": "reset_equipped_tools", "output": [{"type": "text", "text": "Active tool groups successfully: ['builtin']. You MUST follow these notes to use the tools:\n<notes>## About builtin Tools\n使用说明：\n- calc: 安全计算器，支持加减乘除与括号\n- now: 获取当前时间（UTC）\n</notes>"}]}}]}
+
+event: plugin_call
+data: {"sequence_number": 5, "object": "plugin_call", "status": "completed", "id": "msg_d82a6660-9c6e-44e4-9806-02ceb8ac435a", "type": "plugin_call", "role": "assistant", "content": [{"object": "content", "type": "data", "delta": false, "data": {"type": "tool_use", "id": "call_c1c00f7bbd1d4ea68440a958", "name": "tool_now", "input": {}}}]}
+
+event: plugin_call
+data: {"sequence_number": 6, "object": "plugin_call", "status": "completed", "id": "msg_49236e2a-a34e-4023-99a0-1dc97431d59f", "type": "plugin_call", "role": "assistant", "content": [{"object": "content", "type": "data", "delta": false, "data": {"type": "tool_use", "id": "call_c1c00f7bbd1d4ea68440a958", "name": "tool_now", "input": {"tz_offset_minutes": 480}}}]}
+
+event: plugin_call_output
+data: {"sequence_number": 7, "object": "plugin_call_output", "status": "completed", "id": "msg_9748f05c-c350-4efd-8332-8858811ad302", "type": "plugin_call_output", "role": "assistant", "content": [{"object": "content", "type": "data", "delta": false, "data": {"type": "tool_result", "id": "call_c1c00f7bbd1d4ea68440a958", "name": "tool_now", "output": [{"type": "text", "text": "2025-11-12T18:05:28.058211+00:00"}]}}]}
+
+event: message
+data: {"sequence_number": 8, "object": "message", "status": "in_progress", "id": "msg_6312880c-2860-441d-b896-e218e6e43868", "type": "message", "role": "assistant"}
+
+event: text
+data: {"sequence_number": 9, "object": "content", "status": "in_progress", "type": "text", "index": 0, "delta": true, "msg_id": "msg_6312880c-2860-441d-b896-e218e6e43868", "text": "现在"}
+
+......
+
+data: {"sequence_number": 16, "object": "content", "status": "in_progress", "type": "text", "index": 0, "delta": true, "msg_id": "msg_6312880c-2860-441d-b896-e218e6e43868", "text": "2:05。"}
+
+event: message
+data: {"sequence_number": 17, "object": "message", "status": "completed", "id": "msg_6312880c-2860-441d-b896-e218e6e43868", "type": "message", "role": "assistant", "content": [{"object": "content", "type": "text", "text": "现在是北京时间 2025 年 11 月 13 日 凌晨 2:05。"}]}
+
+event: message
+data: {"sequence_number": 18, "object": "response", "status": "completed", "id": "response_6e39e4fb-f7b5-421c-95a8-2695a61797ea", "created_at": 1762941912, "output": [{"sequence_number": 17, "object": "message", "status": "completed", "id": "msg_6312880c-2860-441d-b896-e218e6e43868", "type": "message", "role": "assistant", "content": [{"object": "content", "type": "text", "text": "现在是北京时间 2025 年 11 月 13 日 凌晨 2:05。"}]}]}
+
