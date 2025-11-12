@@ -1,0 +1,942 @@
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { fetch as expoFetch } from 'expo/fetch';
+
+// 流式响应转换函数
+async function transformStreamingResponse(response: Response, debugLog: (message: string, data?: any) => void): Promise<Response> {
+    try {
+        const reader = response.body?.getReader();
+        if (!reader) {
+            throw new Error('Response body is not readable');
+        }
+
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let currentEventType = '';
+
+        // 创建一个新的可读流
+        const stream = new ReadableStream({
+            async start(controller) {
+                try {
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop() || ''; // 保留最后一个不完整的行
+
+                        for (const line of lines) {
+                            if (line.trim() === '') continue;
+
+                            // 解析 SSE 格式
+                            if (line.startsWith('event:')) {
+                                currentEventType = line.slice(6).trim();
+                                debugLog('SSE Event:', currentEventType);
+                                // 不直接发送事件类型，而是在处理数据时使用
+                            } else if (line.startsWith('data:')) {
+                                const dataStr = line.slice(5).trim();
+                                debugLog('SSE Data:', dataStr);
+                                debugLog('Current Event Type:', currentEventType);
+
+                                try {
+                                    const data = JSON.parse(dataStr);
+
+                                    // 转换你的自定义 SSE 格式到 OpenAI 格式
+                                    const openAIFormat = transformStreamingDataToOpenAIFormat(data, currentEventType, debugLog);
+
+                                    if (openAIFormat) {
+                                        // 发送转换后的数据
+                                        controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(openAIFormat)}\n\n`));
+                                    }
+                                } catch (parseError) {
+                                    debugLog('Failed to parse SSE data:', parseError);
+                                    // 如果解析失败，发送原始数据
+                                    controller.enqueue(new TextEncoder().encode(`data: ${dataStr}\n\n`));
+                                }
+
+                                // 重置当前事件类型
+                                currentEventType = '';
+                            }
+                        }
+                    }
+
+                    // 处理剩余的 buffer
+                    if (buffer.trim()) {
+                        controller.enqueue(new TextEncoder().encode(buffer));
+                    }
+
+                    // 发送流结束标记
+                    controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'));
+                    controller.close();
+                } catch (error) {
+                    debugLog('Stream processing error:', error);
+                    controller.error(error);
+                } finally {
+                    reader.releaseLock();
+                }
+            }
+        });
+
+        return new Response(stream, {
+            status: response.status,
+            headers: {
+                'Content-Type': 'text/event-stream',
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type',
+            },
+        });
+    } catch (error) {
+        debugLog('Failed to transform streaming response:', error);
+        throw new Error(`Failed to transform streaming response: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+}
+
+// 流式数据格式转换函数
+function transformStreamingDataToOpenAIFormat(
+    data: CustomAgentResponse | CustomMessageResponse | CustomPluginCallResponse | TextContentEvent,
+    eventType: string = '',
+    debugLog?: (message: string, data?: any) => void
+): OpenAIStreamingChunk | null {
+    // 如果数据已经是 OpenAI 格式，直接返回
+    if ('choices' in data && Array.isArray(data.choices)) {
+        return data as unknown as OpenAIStreamingChunk;
+    }
+
+    try {
+        let delta = { content: '' };
+        let finishReason = null;
+
+        // 处理文本内容事件（event: text）
+        if (eventType === 'text' && data.object === 'content' && (data as TextContentEvent).type === 'text') {
+            const textEvent = data as TextContentEvent;
+            debugLog?.('Processing text content event:', { text: textEvent.text, delta: textEvent.delta });
+
+            if (textEvent.delta && textEvent.text) {
+                delta.content = textEvent.text;
+            }
+
+            return {
+                id: textEvent.msg_id || `chatcmpl-${Date.now()}`,
+                object: 'chat.completion.chunk',
+                created: Math.floor(Date.now() / 1000),
+                model: 'custom-agent',
+                choices: [{
+                    index: textEvent.index || 0,
+                    delta: delta,
+                    finish_reason: null,
+                }],
+            };
+        }
+
+        // 处理你的自定义响应格式
+        if (data.object === 'response') {
+            // 处理响应状态消息
+            if (data.status === 'created') {
+                // 开始响应，返回初始消息
+                return {
+                    id: data.id || `chatcmpl-${Date.now()}`,
+                    object: 'chat.completion.chunk',
+                    created: data.created_at || Math.floor(Date.now() / 1000),
+                    model: 'custom-agent',
+                    choices: [{
+                        index: 0,
+                        delta: { role: 'assistant', content: '' },
+                        finish_reason: null,
+                    }],
+                };
+            } else if (data.status === 'in_progress') {
+                // 响应进行中，可能包含内容
+                return {
+                    id: data.id || `chatcmpl-${Date.now()}`,
+                    object: 'chat.completion.chunk',
+                    created: data.created_at || Math.floor(Date.now() / 1000),
+                    model: 'custom-agent',
+                    choices: [{
+                        index: 0,
+                        delta: { content: '' }, // 空内容，等待实际内容
+                        finish_reason: null,
+                    }],
+                };
+            } else if (data.status === 'completed') {
+                // 响应完成
+                return {
+                    id: data.id || `chatcmpl-${Date.now()}`,
+                    object: 'chat.completion.chunk',
+                    created: data.created_at || Math.floor(Date.now() / 1000),
+                    model: 'custom-agent',
+                    choices: [{
+                        index: 0,
+                        delta: {},
+                        finish_reason: 'stop',
+                    }],
+                };
+            }
+        } else if (data.object === 'message' && data.role === 'assistant') {
+            // 处理实际的消息内容
+            if (data.content && Array.isArray(data.content)) {
+                const textContent = data.content.find((item: any) => item.type === 'text' && item.text);
+                if (textContent) {
+                    delta.content = textContent.text;
+                }
+            }
+
+            return {
+                id: data.id || `chatcmpl-${Date.now()}`,
+                object: 'chat.completion.chunk',
+                created: data.created_at || Math.floor(Date.now() / 1000),
+                model: 'custom-agent',
+                choices: [{
+                    index: 0,
+                    delta: delta,
+                    finish_reason: finishReason,
+                }],
+            };
+        } else if (data.object === 'plugin_call') {
+            // 处理插件调用，暂时转换为普通消息
+            const pluginData = data.content?.find((item: any) => item.type === 'data')?.data;
+            if (pluginData) {
+                return {
+                    id: data.id || `chatcmpl-${Date.now()}`,
+                    object: 'chat.completion.chunk',
+                    created: data.created_at || Math.floor(Date.now() / 1000),
+                    model: 'custom-agent',
+                    choices: [{
+                        index: 0,
+                        delta: { content: `[Plugin Call: ${pluginData.name || 'unknown'}]` },
+                        finish_reason: null,
+                    }],
+                };
+            }
+        }
+
+        // 对于不识别的事件类型，返回null以过滤掉
+        if (eventType && eventType !== 'text') {
+            debugLog?.('Ignoring non-text event:', { eventType, data });
+            return null;
+        }
+
+        // 如果无法识别格式，返回一个基本的 chunk
+        return {
+            id: (data as any).id || `chatcmpl-${Date.now()}`,
+            object: 'chat.completion.chunk',
+            created: (data as any).created_at || Math.floor(Date.now() / 1000),
+            model: 'custom-agent',
+            choices: [{
+                index: 0,
+                delta: { content: '' },
+                finish_reason: null,
+            }],
+        };
+    } catch (error) {
+        debugLog?.('Error transforming streaming data to OpenAI format:', error);
+
+        // 返回错误 chunk
+        return {
+            id: `chatcmpl-${Date.now()}`,
+            object: 'chat.completion.chunk',
+            created: Math.floor(Date.now() / 1000),
+            model: 'custom-agent',
+            choices: [{
+                index: 0,
+                delta: { content: '[Error processing chunk]' },
+                finish_reason: 'stop',
+            }],
+        };
+    }
+}
+
+// 响应格式转换函数
+function transformResponseToOpenAIFormat(responseData: CustomAgentResponse): OpenAICompatibleResponse {
+    // 如果响应已经是 OpenAI 格式，直接返回
+    if ('choices' in responseData && Array.isArray(responseData.choices)) {
+        return responseData as unknown as OpenAICompatibleResponse;
+    }
+
+    // 处理你的自定义响应格式
+    try {
+        let content = '';
+        let role = 'assistant';
+        let finishReason = 'stop';
+
+        // 从 output 数组中提取消息内容
+        if (responseData.output && Array.isArray(responseData.output)) {
+            const assistantMessage = responseData.output.find((msg: any) => msg.role === 'assistant');
+            if (assistantMessage && assistantMessage.content && Array.isArray(assistantMessage.content)) {
+                const textContent = assistantMessage.content.find((item: any) => item.type === 'text' && item.text);
+                if (textContent && textContent.text) {
+                    content = textContent.text;
+                }
+            }
+        }
+
+        // 如果没有找到内容，尝试其他可能的字段
+        if (!content) {
+            content = (responseData as any).response || (responseData as any).message || (responseData as any).content || JSON.stringify(responseData);
+        }
+
+        // 根据 status 设置 finish_reason
+        if (responseData.status === 'in_progress') {
+            finishReason = 'length';
+        } else if (responseData.status === 'error') {
+            finishReason = 'stop';
+        } else {
+            finishReason = 'stop';
+        }
+
+        // 构建 OpenAI 兼容的响应格式
+        return {
+            id: responseData.id || `chatcmpl-${Date.now()}`,
+            object: 'chat.completion',
+            created: responseData.created_at || Math.floor(Date.now() / 1000),
+            model: 'custom-agent',
+            choices: [
+                {
+                    index: 0,
+                    message: {
+                        role: role as 'assistant',
+                        content: content,
+                    },
+                    finish_reason: finishReason as 'stop' | 'length' | 'content_filter',
+                }
+            ],
+            usage: responseData.usage || {
+                prompt_tokens: 0,
+                completion_tokens: 0,
+                total_tokens: 0,
+            },
+            // 如果有错误信息，包含错误字段
+            ...(responseData.status === 'error' && {
+                error: {
+                    message: (responseData as any).error || (responseData as any).message || 'Unknown error',
+                    type: 'invalid_request_error',
+                    code: (responseData as any).error_code || 'unknown_error',
+                }
+            }),
+        };
+    } catch (error) {
+        console.error('Error transforming response to OpenAI format:', error);
+
+        // 如果转换失败，返回一个基本的错误响应
+        return {
+            id: `chatcmpl-${Date.now()}`,
+            object: 'chat.completion',
+            created: Math.floor(Date.now() / 1000),
+            model: 'custom-agent',
+            choices: [
+                {
+                    index: 0,
+                    message: {
+                        role: 'assistant',
+                        content: 'Error processing response',
+                    },
+                    finish_reason: 'stop',
+                }
+            ],
+            usage: {
+                prompt_tokens: 0,
+                completion_tokens: 0,
+                total_tokens: 0,
+            },
+            error: {
+                message: 'Failed to transform response format',
+                type: 'invalid_request_error',
+                code: 'transformation_error',
+            }
+        };
+    }
+}
+
+// 响应数据验证函数
+function validateResponseData(responseData: any, debugLog: (message: string, data?: any) => void): void {
+    if (!responseData || typeof responseData !== 'object') {
+        debugLog('Invalid response data: not an object', responseData);
+        throw new Error('Invalid response format: expected an object');
+    }
+
+    // 检查必需的字段
+    const requiredFields = ['id', 'object', 'status', 'created_at'];
+    for (const field of requiredFields) {
+        if (!(field in responseData)) {
+            debugLog(`Missing required field: ${field}`, responseData);
+            // 对于缺失字段，给出警告而不是抛出错误
+            console.warn(`Warning: Response missing required field '${field}', but continuing processing`);
+        }
+    }
+
+    // 验证状态字段
+    if (responseData.status && typeof responseData.status !== 'string') {
+        debugLog('Invalid status field:', responseData.status);
+        console.warn('Warning: Response status field is not a string');
+    }
+
+    // 验证 created_at 字段
+    if (responseData.created_at && typeof responseData.created_at !== 'number') {
+        debugLog('Invalid created_at field:', responseData.created_at);
+        console.warn('Warning: Response created_at field is not a number');
+    }
+
+    // 如果有 output 字段，验证其结构
+    if (responseData.output && !Array.isArray(responseData.output)) {
+        debugLog('Invalid output field: not an array', responseData.output);
+        console.warn('Warning: Response output field is not an array');
+    }
+
+    debugLog('Response data validation completed', {
+        hasRequiredFields: requiredFields.every(field => field in responseData),
+        hasOutput: Array.isArray(responseData.output),
+        status: responseData.status
+    });
+}
+
+// OpenAI 响应验证函数
+function validateOpenAIResponse(response: OpenAICompatibleResponse, debugLog: (message: string, data?: any) => void): void {
+    if (!response || typeof response !== 'object') {
+        debugLog('Invalid OpenAI response: not an object', response);
+        throw new Error('Invalid OpenAI response format: expected an object');
+    }
+
+    const requiredFields = ['id', 'object', 'created', 'model', 'choices', 'usage'];
+    for (const field of requiredFields) {
+        if (!(field in response)) {
+            debugLog(`Missing OpenAI response field: ${field}`, response);
+            throw new Error(`Invalid OpenAI response: missing required field '${field}'`);
+        }
+    }
+
+    // 验证 choices 数组
+    if (!Array.isArray(response.choices) || response.choices.length === 0) {
+        debugLog('Invalid choices field:', response.choices);
+        throw new Error('Invalid OpenAI response: choices must be a non-empty array');
+    }
+
+    // 验证第一个 choice 的结构
+    const firstChoice = response.choices[0];
+    if (!firstChoice.message || typeof firstChoice.message.content !== 'string') {
+        debugLog('Invalid choice structure:', firstChoice);
+        throw new Error('Invalid OpenAI response: choice must have a message with string content');
+    }
+
+    // 验证 usage 对象
+    if (!response.usage || typeof response.usage !== 'object') {
+        debugLog('Invalid usage field:', response.usage);
+        throw new Error('Invalid OpenAI response: usage must be an object');
+    }
+
+    debugLog('OpenAI response validation completed', {
+        id: response.id,
+        object: response.object,
+        choicesCount: response.choices.length,
+        hasContent: !!response.choices[0].message.content,
+        usage: response.usage
+    });
+}
+
+// 更严格的类型定义
+interface MessageContent {
+    type: 'text' | 'image' | 'file' | 'data';
+    text?: string;
+    data?: any;
+    [key: string]: any;
+}
+
+interface CustomMessage {
+    role: 'user' | 'assistant' | 'system';
+    content: MessageContent[] | string;
+}
+
+interface CustomRequestBody {
+    messages?: CustomMessage[];
+    user_id?: string;
+    session_id?: string;
+    temperature?: number;
+    max_tokens?: number;
+    max_completion_tokens?: number;
+    stream?: boolean;
+    model?: string;
+    n?: number;
+    [key: string]: any;
+}
+
+// 你的 agent server 响应类型定义
+interface CustomAgentResponse {
+    sequence_number?: number | null;
+    object: 'response' | 'message' | 'plugin_call';
+    status: 'created' | 'in_progress' | 'completed' | 'error';
+    error?: any;
+    id: string;
+    created_at: number;
+    session_id?: string;
+    output?: CustomMessageResponse[];
+    [key: string]: any;
+}
+
+interface CustomMessageResponse {
+    sequence_number?: number | null;
+    object: 'message';
+    status?: 'created' | 'in_progress' | 'completed' | null;
+    error?: any;
+    id: string;
+    type: 'message';
+    role: 'user' | 'assistant' | 'system';
+    content: MessageContent[];
+    usage?: {
+        prompt_tokens?: number;
+        completion_tokens?: number;
+        total_tokens?: number;
+    } | null;
+    [key: string]: any;
+}
+
+interface CustomPluginCallResponse {
+    sequence_number?: number | null;
+    object: 'plugin_call';
+    status: 'created' | 'in_progress' | 'completed' | 'error';
+    error?: any;
+    id: string;
+    type: 'plugin_call';
+    role: 'assistant';
+    content: MessageContent[];
+    usage?: {
+        prompt_tokens?: number;
+        completion_tokens?: number;
+        total_tokens?: number;
+    } | null;
+    [key: string]: any;
+}
+
+// 文本内容事件类型（用于流式响应）
+interface TextContentEvent {
+    sequence_number: number;
+    object: 'content';
+    status: 'in_progress';
+    type: 'text';
+    index: number;
+    delta: boolean;
+    msg_id: string;
+    text: string;
+}
+
+// OpenAI 兼容响应类型定义
+interface OpenAICompatibleResponse {
+    id: string;
+    object: 'chat.completion';
+    created: number;
+    model: string;
+    choices: Array<{
+        index: number;
+        message: {
+            role: 'assistant';
+            content: string;
+        };
+        finish_reason: 'stop' | 'length' | 'content_filter';
+    }>;
+    usage: {
+        prompt_tokens: number;
+        completion_tokens: number;
+        total_tokens: number;
+    };
+    error?: {
+        message: string;
+        type: string;
+        code: string;
+    };
+}
+
+interface OpenAIStreamingChunk {
+    id: string;
+    object: 'chat.completion.chunk';
+    created: number;
+    model: string;
+    choices: Array<{
+        index: number;
+        delta: {
+            role?: 'assistant';
+            content?: string;
+        };
+        finish_reason: 'stop' | 'length' | 'content_filter' | null;
+    }>;
+}
+
+// 自定义 Provider 设置接口
+interface CustomAgentSettings {
+    baseURL?: string;
+    apiKey?: string;
+    headers?: Record<string, string>;
+    queryParams?: Record<string, string>;
+    // 是否启用详细日志
+    debug?: boolean;
+    // 日志级别
+    logLevel?: 'error' | 'warn' | 'info' | 'debug';
+    // 自定义 fetch 实现（支持 Expo/React Native 环境）
+    customFetch?: typeof globalThis.fetch;
+    // 请求超时时间（毫秒）
+    timeout?: number;
+    // 是否启用响应验证
+    enableValidation?: boolean;
+}
+
+// 创建自定义 provider
+export function createCustomAgent(settings: CustomAgentSettings = {}) {
+    // 获取日志级别
+    const logLevel = settings.logLevel || (settings.debug ? 'debug' : 'error');
+
+    // 创建调试日志函数
+    const debugLog = (level: 'error' | 'warn' | 'info' | 'debug', message: string, data?: any) => {
+        const levels = ['error', 'warn', 'info', 'debug'];
+        const currentLevelIndex = levels.indexOf(logLevel);
+        const messageLevelIndex = levels.indexOf(level);
+
+        if (messageLevelIndex <= currentLevelIndex) {
+            const timestamp = new Date().toISOString();
+            const prefix = `[CustomAgent ${timestamp}] [${level.toUpperCase()}]`;
+
+            switch (level) {
+                case 'error':
+                    console.error(prefix, message, data);
+                    break;
+                case 'warn':
+                    console.warn(prefix, message, data);
+                    break;
+                case 'info':
+                    console.info(prefix, message, data);
+                    break;
+                case 'debug':
+                default:
+                    console.log(prefix, message, data);
+                    break;
+            }
+        }
+    };
+
+    // 便捷的日志函数
+    const logError = (message: string, data?: any) => debugLog('error', message, data);
+    const logWarn = (message: string, data?: any) => debugLog('warn', message, data);
+    const logInfo = (message: string, data?: any) => debugLog('info', message, data);
+    const logDebug = (message: string, data?: any) => debugLog('debug', message, data);
+
+    // 根据环境选择合适的 fetch 实现
+    const fetchImplementation = settings.customFetch || expoFetch;
+    const provider = createOpenAICompatible({
+        name: 'custom-agent',
+        baseURL: settings.baseURL || 'http://localhost:8000',
+        apiKey: settings.apiKey || 'dummy-key', // 如果你的服务不需要 API key
+        headers: {
+            'Content-Type': 'application/json',
+            ...settings.headers,
+        },
+        queryParams: {
+            ...settings.queryParams,
+        },
+        // 自定义 fetch 以适配你的 API 格式
+        fetch: async (url, options) => {
+            try {
+                logInfo('Starting custom agent request', { url });
+
+                // 安全地解析请求体
+                let requestBody: CustomRequestBody;
+                try {
+                    requestBody = JSON.parse(options?.body as string || '{}');
+                    logDebug('Request body parsed successfully', requestBody);
+                } catch (parseError) {
+                    logError('Failed to parse request body', parseError);
+                    throw new Error('Invalid JSON in request body');
+                }
+                logDebug('Received request', { url, requestBody });
+
+                // 转换 OpenAI 格式到你的 agent server API 格式
+                const customBody = {
+                    user_id: requestBody.user_id || 'default',
+                    session_id: requestBody.session_id || generateSessionId(),
+                    input: (requestBody.messages || []).map((msg: any, index: number) => {
+                        try {
+                            // 验证消息结构
+                            if (!msg.role || !msg.content) {
+                                logError(`Invalid message at index ${index}`, msg);
+                                throw new Error(`Message at index ${index} is missing required fields (role or content)`);
+                            }
+
+                            // 处理消息内容格式
+                            let content;
+                            if (Array.isArray(msg.content)) {
+                                // 如果已经是数组格式，验证每个内容项
+                                content = msg.content.map((item: any, itemIndex: number) => {
+                                    if (!item.type) {
+                                        logWarn(`Invalid content item at message ${index}, item ${itemIndex}`, item);
+                                        return { type: 'text', text: String(item.text || item) };
+                                    }
+                                    return item;
+                                });
+                            } else if (typeof msg.content === 'string') {
+                                // 如果是字符串，转换为标准格式
+                                content = [{ type: 'text', text: msg.content }];
+                            } else {
+                                // 其他情况，保持原样或转换为字符串
+                                content = [{ type: 'text', text: String(msg.content) }];
+                            }
+
+                            return {
+                                role: msg.role,
+                                content: content
+                            };
+                        } catch (msgError) {
+                            logError(`Error processing message at index ${index}`, msgError);
+                            throw new Error(`Failed to process message at index ${index}: ${msgError instanceof Error ? msgError.message : 'Unknown error'}`);
+                        }
+                    }),
+                    // 可选的其他参数，进行验证
+                    ...(requestBody.temperature !== undefined &&
+                        typeof requestBody.temperature === 'number' &&
+                        requestBody.temperature >= 0 &&
+                        requestBody.temperature <= 2 &&
+                        { temperature: requestBody.temperature }),
+                    ...(requestBody.max_tokens &&
+                        typeof requestBody.max_tokens === 'number' &&
+                        requestBody.max_tokens > 0 &&
+                        { max_tokens: requestBody.max_tokens }),
+                    ...(requestBody.max_completion_tokens &&
+                        typeof requestBody.max_completion_tokens === 'number' &&
+                        requestBody.max_completion_tokens > 0 &&
+                        { max_completion_tokens: requestBody.max_completion_tokens }),
+                    ...(requestBody.stream !== undefined && { stream: requestBody.stream }),
+                };
+
+                // 根据是否是流式请求选择不同的端点
+                const isStreaming = requestBody.stream === true ||
+                    (typeof url === 'string' && url.includes('stream'));
+                const endpoint = isStreaming ? '/stream' : '/process';
+
+                // 验证必要的配置
+                const baseURL = settings.baseURL || 'http://localhost:8000';
+                if (!baseURL) {
+                    throw new Error('Base URL is required');
+                }
+
+                logInfo('Sending request to agent server', {
+                    endpoint: `${baseURL}${endpoint}`,
+                    isStreaming,
+                    messageCount: customBody.input?.length || 0,
+                    hasTemperature: customBody.temperature !== undefined,
+                    hasMaxTokens: customBody.max_tokens !== undefined
+                });
+
+                logDebug('Request body details', customBody);
+
+                // 设置请求超时
+                const timeoutMs = settings.timeout || 60000; // 默认 60 秒
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => {
+                    logWarn('Request timeout reached', { timeoutMs });
+                    controller.abort();
+                }, timeoutMs);
+
+                let response: Response;
+                try {
+                    response = await fetchImplementation(`${baseURL}${endpoint}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...settings.headers,
+                        },
+                        body: JSON.stringify(customBody),
+                        signal: controller.signal,
+                    });
+                } catch (fetchError) {
+                    if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+                        logError('Request timeout', { timeoutMs });
+                        throw new Error(`Request timeout - your agent server did not respond within ${timeoutMs}ms`);
+                    }
+                    logError('Network error during fetch', fetchError);
+                    throw fetchError;
+                } finally {
+                    clearTimeout(timeoutId);
+                }
+
+                logInfo('Response received from agent server', {
+                    status: response.status,
+                    ok: response.ok,
+                    headers: Object.fromEntries(response.headers.entries())
+                });
+
+                // 检查响应状态
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    logError('Agent server returned error', { status: response.status, errorText });
+                    throw new Error(`Agent server error: ${response.status} - ${errorText}`);
+                }
+
+                // 对于流式响应，需要转换 SSE 格式
+                if (isStreaming) {
+                    logInfo('Processing streaming response');
+                    return transformStreamingResponse(response, (message, data) => {
+                        logDebug(message, data);
+                    });
+                }
+
+                // 对于非流式响应，需要转换格式
+                logInfo('Processing non-streaming response');
+                let responseData;
+                try {
+                    const responseText = await response.text();
+                    logDebug('Raw response text received', { length: responseText.length, preview: responseText.substring(0, 200) });
+                    responseData = JSON.parse(responseText);
+                    logDebug('Response JSON parsed successfully');
+                } catch (parseError) {
+                    logError('Failed to parse response JSON', parseError);
+                    throw new Error(`Invalid JSON response from agent server: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
+                }
+
+                logDebug('Original response data', responseData);
+
+                // 验证响应数据结构（如果启用了验证）
+                if (settings.enableValidation !== false) {
+                    try {
+                        validateResponseData(responseData, logDebug);
+                    } catch (validationError) {
+                        logWarn('Response validation failed, but continuing processing', validationError);
+                    }
+                }
+
+                // 将你的自定义响应格式转换为 OpenAI 兼容格式
+                const openAICompatibleResponse = transformResponseToOpenAIFormat(responseData);
+                logDebug('Transformed to OpenAI format', {
+                    hasChoices: openAICompatibleResponse.choices && openAICompatibleResponse.choices.length > 0,
+                    hasContent: !!openAICompatibleResponse.choices[0]?.message?.content,
+                    contentPreview: openAICompatibleResponse.choices[0]?.message?.content?.substring(0, 100)
+                });
+
+                // 验证转换后的响应（如果启用了验证）
+                if (settings.enableValidation !== false) {
+                    try {
+                        validateOpenAIResponse(openAICompatibleResponse, logDebug);
+                    } catch (validationError) {
+                        logWarn('OpenAI response validation failed', validationError);
+                    }
+                }
+
+                return new Response(JSON.stringify(openAICompatibleResponse), {
+                    status: response.status,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...response.headers,
+                    },
+                });
+            } catch (error) {
+                logError('Custom agent fetch error', {
+                    error: error instanceof Error ? error.message : error,
+                    stack: error instanceof Error ? error.stack : undefined
+                });
+                throw new Error(`Failed to fetch from custom agent: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            }
+        },
+    });
+
+    return provider;
+}
+
+// 默认的 custom agent 实例（启用调试和验证）
+export const customAgent = createCustomAgent({
+    debug: true,
+    logLevel: 'info',
+    enableValidation: true,
+    timeout: 60000,
+});
+
+
+// 生成唯一的会话 ID
+function generateSessionId(): string {
+    return `session_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+}
+
+// 使用示例：获取特定模型
+export function getModel(modelName: string = 'default') {
+    return customAgent(modelName);
+}
+
+/**
+ * 使用示例：
+ *
+ * 基本使用：
+ * ```typescript
+ * import { streamText } from 'ai';
+ * import { customAgent } from './custom-agent-provid';
+ *
+ * const result = await streamText({
+ *     model: customAgent('qwen3:8b'),
+ *     prompt: '你好，请介绍一下自己',
+ * });
+ *
+ * // 处理流式响应
+ * for await (const chunk of result.textStream) {
+ *     console.log(chunk);
+ * }
+ * ```
+ *
+ * 在 React Native/Expo 环境中使用：
+ * ```typescript
+ * import { useChat } from '@ai-sdk/react';
+ * import { DefaultChatTransport } from 'ai';
+ * import { fetch as expoFetch } from 'expo/fetch';
+ * import { customAgent } from './custom-agent-provid';
+ *
+ * // 创建自定义 provider，使用 Expo fetch
+ * const customProvider = createCustomAgent({
+ *     customFetch: expoFetch as typeof globalThis.fetch,
+ *     debug: true, // 启用调试日志
+ * });
+ *
+ * export default function ChatComponent() {
+ *     const { messages, sendMessage } = useChat({
+ *         transport: new DefaultChatTransport({
+ *             fetch: expoFetch as unknown as typeof globalThis.fetch,
+ *             api: generateAPIUrl("/api/chat"),
+ *         }),
+ *     });
+ *
+ *     return (
+ *         // 你的聊天组件 UI
+ *     );
+ * }
+ * ```
+ *
+ * 自定义配置：
+ * ```typescript
+ * const customProvider = createCustomAgent({
+ *     baseURL: 'https://your-agent-server.com',
+ *     apiKey: process.env.YOUR_API_KEY,
+ *     headers: {
+ *         'X-Custom-Header': 'value',
+ *     },
+ *     queryParams: {
+ *         'version': 'v1',
+ *     },
+ *     customFetch: expoFetch as typeof globalThis.fetch, // Expo 环境下必需
+ *     debug: true, // 启用调试日志
+ * });
+ *
+ * const { text } = await streamText({
+ *     model: customProvider('your-model'),
+ *     messages: [
+ *         { role: 'user', content: 'Hello!' }
+ *     ],
+ * });
+ * ```
+ *
+ * 在 chat API 中使用（Next.js 环境）：
+ * ```typescript
+ * // src/app/api/chat+api.ts
+ * import { customAgent } from '../custom-agent-provid';
+ *
+ * export async function POST(req: Request) {
+ *     const { messages } = await req.json();
+ *
+ *     const result = streamText({
+ *         model: customAgent('qwen3:8b'),
+ *         messages: convertToModelMessages(messages),
+ *     });
+ *
+ *     return result.toUIMessageStreamResponse();
+ * }
+ * ```
+ */
