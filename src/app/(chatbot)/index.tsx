@@ -1,10 +1,11 @@
 import { useChat } from "@ai-sdk/react";
 import { Ionicons } from "@expo/vector-icons";
 import { DefaultChatTransport } from "ai";
-import { fetch as expoFetch } from "expo/fetch";
 import * as ImagePicker from "expo-image-picker";
+import { fetch as expoFetch } from "expo/fetch";
 import { useEffect, useRef, useState } from "react";
 import {
+  Alert,
   Animated,
   Dimensions,
   Image,
@@ -16,7 +17,6 @@ import {
   Text,
   TextInput,
   View,
-  Alert,
 } from "react-native";
 import {
   GestureHandlerRootView,
@@ -25,6 +25,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AIMessage, UserMessage } from "../../components/chat";
 import { generateAPIUrl } from "../../utils/fetch";
+import { convertImageToBase64 } from "../../utils/imageUtils";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -60,11 +61,12 @@ export default function ChatBotScreen() {
   // 请求相机和媒体库权限
   const requestPermissions = async () => {
     const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
-    const mediaLibraryPermission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const mediaLibraryPermission =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     return (
-      cameraPermission.status === 'granted' &&
-      mediaLibraryPermission.status === 'granted'
+      cameraPermission.status === "granted" &&
+      mediaLibraryPermission.status === "granted"
     );
   };
 
@@ -72,7 +74,7 @@ export default function ChatBotScreen() {
   const pickImage = async () => {
     const hasPermission = await requestPermissions();
     if (!hasPermission) {
-      Alert.alert('权限不足', '需要相机和相册权限才能选择图片');
+      Alert.alert("权限不足", "需要相机和相册权限才能选择图片");
       return;
     }
 
@@ -88,8 +90,8 @@ export default function ChatBotScreen() {
         setSelectedImage(result.assets[0].uri);
       }
     } catch (error) {
-      console.error('选择图片失败:', error);
-      Alert.alert('错误', '选择图片失败，请重试');
+      console.error("选择图片失败:", error);
+      Alert.alert("错误", "选择图片失败，请重试");
     }
   };
 
@@ -97,7 +99,7 @@ export default function ChatBotScreen() {
   const takePhoto = async () => {
     const hasPermission = await requestPermissions();
     if (!hasPermission) {
-      Alert.alert('权限不足', '需要相机权限才能拍照');
+      Alert.alert("权限不足", "需要相机权限才能拍照");
       return;
     }
 
@@ -113,8 +115,8 @@ export default function ChatBotScreen() {
         setSelectedImage(result.assets[0].uri);
       }
     } catch (error) {
-      console.error('拍照失败:', error);
-      Alert.alert('错误', '拍照失败，请重试');
+      console.error("拍照失败:", error);
+      Alert.alert("错误", "拍照失败，请重试");
     }
   };
 
@@ -123,25 +125,72 @@ export default function ChatBotScreen() {
     setSelectedImage(null);
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!input.trim() && !selectedImage) return;
 
     const parts: any[] = [];
 
     // 添加文本内容
     if (input.trim()) {
-      parts.push({ type: 'text', text: input.trim() });
+      parts.push({ type: "text", text: input.trim() });
     }
 
     // 添加图片内容
     if (selectedImage) {
-      parts.push({
-        type: 'image',
-        image: selectedImage,
-      });
+      try {
+        // 将图片转换为base64
+        const base64Result = await convertImageToBase64(selectedImage, {
+          quality: 0.8,
+          maxWidth: 1024,
+          maxHeight: 1024,
+          compress: true,
+        });
+
+        parts.push({
+          type: "image",
+          image_url: base64Result.base64, // 用于API调用的base64数据
+          local_uri: selectedImage, // 用于UI显示的本地URL
+        });
+
+        console.log("图片转换完成，格式:", base64Result.format);
+        console.log("图片大小:", Math.round(base64Result.size / 1024), "KB");
+        if (base64Result.width && base64Result.height) {
+          console.log(
+            "图片尺寸:",
+            base64Result.width,
+            "x",
+            base64Result.height
+          );
+        }
+      } catch (error) {
+        console.error("图片转换失败:", error);
+        Alert.alert("错误", "图片处理失败，请重试");
+        return;
+      }
     }
 
     if (parts.length > 0) {
+      // 打印parts内容，base64只显示前100字符
+      console.log("发送的parts内容:");
+      parts.forEach((part, index) => {
+        if (part.type === "text") {
+          console.log(`Part ${index}:`, {
+            type: part.type,
+            text: part.text,
+          });
+        } else if (part.type === "image") {
+          const base64Preview =
+            part.image_url.length > 100
+              ? part.image_url.substring(0, 100) + "..."
+              : part.image_url;
+          console.log(`Part ${index}:`, {
+            type: part.type,
+            image_url: base64Preview,
+            local_uri: part.local_uri,
+          });
+        }
+      });
+
       sendMessage({ parts });
       setInput("");
       setSelectedImage(null);
@@ -491,24 +540,20 @@ export default function ChatBotScreen() {
                     opacity: pressed ? 0.6 : 1,
                   })}
                   onPress={() => {
-                    Alert.alert(
-                      '选择图片',
-                      '你想从哪里选择图片？',
-                      [
-                        {
-                          text: '拍照',
-                          onPress: takePhoto,
-                        },
-                        {
-                          text: '从相册选择',
-                          onPress: pickImage,
-                        },
-                        {
-                          text: '取消',
-                          style: 'cancel',
-                        },
-                      ]
-                    );
+                    Alert.alert("选择图片", "你想从哪里选择图片？", [
+                      {
+                        text: "拍照",
+                        onPress: takePhoto,
+                      },
+                      {
+                        text: "从相册选择",
+                        onPress: pickImage,
+                      },
+                      {
+                        text: "取消",
+                        style: "cancel",
+                      },
+                    ]);
                   }}
                 >
                   <Ionicons
@@ -548,7 +593,9 @@ export default function ChatBotScreen() {
                     justifyContent: "center",
                     alignItems: "center",
                   })}
-                  disabled={(!input.trim() && !selectedImage) || status !== "ready"}
+                  disabled={
+                    (!input.trim() && !selectedImage) || status !== "ready"
+                  }
                 >
                   <Ionicons name="send" size={16} color="white" />
                 </Pressable>

@@ -49,7 +49,7 @@ export function UserMessage({ parts, messageId }: UserMessageProps) {
               return (
                 <Image
                   key={`${messageId}-${i}`}
-                  source={{ uri: part.image }}
+                  source={{ uri: part.local_uri || part.image_url }}
                   style={{
                     width: 200,
                     height: 200,
