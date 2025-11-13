@@ -25,11 +25,19 @@ export function AIMessage({ parts, messageId }: AIMessageProps) {
                 partIndex={i}
               />
             );
+          case "file":
           case "image":
+            if (
+              part.type === "file" &&
+              part.mediaType &&
+              !part.mediaType.startsWith("image/")
+            ) {
+              return null;
+            }
             return (
               <Image
                 key={`${messageId}-${i}`}
-                source={{ uri: part.image }}
+                source={{ uri: part.image || part.url }}
                 style={{
                   width: 250,
                   height: 250,

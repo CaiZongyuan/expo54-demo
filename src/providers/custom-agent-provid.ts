@@ -640,6 +640,125 @@ export function createCustomAgent(settings: CustomAgentSettings = {}) {
     const logInfo = (message: string, data?: any) => debugLog('info', message, data);
     const logDebug = (message: string, data?: any) => debugLog('debug', message, data);
 
+    const LOG_PREVIEW_LENGTH = 60;
+
+    const truncateForLog = (value?: string, maxLength = LOG_PREVIEW_LENGTH) => {
+        if (typeof value !== 'string') {
+            return value;
+        }
+        if (value.length <= maxLength) {
+            return value;
+        }
+        return `${value.slice(0, maxLength)}... (truncated, ${value.length} chars)`;
+    };
+
+    const sanitizeContentForLog = (content?: MessageContent[]) => {
+        if (!Array.isArray(content)) {
+            return content;
+        }
+        return content.map(part => {
+            const sanitizedPart: MessageContent = { ...part };
+            if (typeof sanitizedPart.text === 'string' && sanitizedPart.text.length > 200) {
+                sanitizedPart.text = truncateForLog(sanitizedPart.text, 200);
+            }
+            if (typeof sanitizedPart.data === 'string' && sanitizedPart.data.startsWith('data:')) {
+                sanitizedPart.data = truncateForLog(sanitizedPart.data);
+            }
+            if (typeof (sanitizedPart as any).image_url === 'string') {
+                (sanitizedPart as any).image_url = truncateForLog((sanitizedPart as any).image_url);
+            } else if ((sanitizedPart as any).image_url && typeof (sanitizedPart as any).image_url.url === 'string') {
+                (sanitizedPart as any).image_url = {
+                    ...(sanitizedPart as any).image_url,
+                    url: truncateForLog((sanitizedPart as any).image_url.url),
+                };
+            }
+            if (typeof (sanitizedPart as any).url === 'string' && (sanitizedPart as any).url.startsWith('data:')) {
+                (sanitizedPart as any).url = truncateForLog((sanitizedPart as any).url);
+            }
+            return sanitizedPart;
+        });
+    };
+
+    const sanitizeRequestBodyForLog = (body: any) => {
+        if (!body || typeof body !== 'object') {
+            return body;
+        }
+        const sanitized = { ...body };
+        if (Array.isArray(body.input)) {
+            sanitized.input = body.input.map((message: any) => ({
+                ...message,
+                content: sanitizeContentForLog(message.content),
+            }));
+        }
+        return sanitized;
+    };
+
+    const normalizeContentItem = (
+        item: any,
+        context: { messageIndex: number; itemIndex: number },
+    ): MessageContent => {
+        if (!item || typeof item !== 'object') {
+            logWarn('Encountered invalid content item, coercing to text', { context });
+            return {
+                type: 'text',
+                text: String(item ?? ''),
+            };
+        }
+
+        if (!item.type) {
+            logWarn('Content item missing type, coercing to text', { context, itemPreview: truncateForLog(JSON.stringify(item)) });
+            return {
+                type: 'text',
+                text: typeof item.text === 'string' ? item.text : JSON.stringify(item),
+            };
+        }
+
+        if (item.type === 'file') {
+            const dataUrl = typeof item.data === 'string'
+                ? item.data
+                : typeof item.url === 'string'
+                    ? item.url
+                    : undefined;
+            if (!dataUrl) {
+                logWarn('File content missing data/url payload; skipping image data', { context });
+                return {
+                    type: 'text',
+                    text: '[image attachment unavailable]',
+                };
+            }
+
+            return {
+                type: 'image',
+                image_url: dataUrl,
+                mediaType: item.mediaType,
+                filename: item.filename,
+            };
+        }
+
+        if (item.type === 'image_url') {
+            const imagePayload = typeof item.image_url === 'string'
+                ? item.image_url
+                : item.image_url?.url;
+            if (!imagePayload) {
+                logWarn('image_url content missing url payload; skipping image data', { context });
+                return {
+                    type: 'text',
+                    text: '[image attachment unavailable]',
+                };
+            }
+
+            return {
+                type: 'image',
+                image_url: imagePayload,
+                mediaType: item.image_url?.media_type || item.mediaType,
+                filename: item.image_url?.filename || item.filename,
+                detail: item.image_url?.detail,
+            };
+        }
+
+        return item;
+    };
+
     // 根据环境选择合适的 fetch 实现
     const fetchImplementation = settings.customFetch || expoFetch;
     const provider = createOpenAICompatible({
@@ -662,12 +781,12 @@ export function createCustomAgent(settings: CustomAgentSettings = {}) {
                 let requestBody: CustomRequestBody;
                 try {
                     requestBody = JSON.parse(options?.body as string || '{}');
-                    logDebug('Request body parsed successfully', requestBody);
+                    logDebug('Request body parsed successfully', sanitizeRequestBodyForLog(requestBody));
                 } catch (parseError) {
                     logError('Failed to parse request body', parseError);
                     throw new Error('Invalid JSON in request body');
                 }
-                logDebug('Received request', { url, requestBody });
+                logDebug('Received request', { url, requestBody: sanitizeRequestBodyForLog(requestBody) });
 
                 // 转换 OpenAI 格式到你的 agent server API 格式
                 const customBody = {
@@ -685,13 +804,9 @@ export function createCustomAgent(settings: CustomAgentSettings = {}) {
                             let content;
                             if (Array.isArray(msg.content)) {
                                 // 如果已经是数组格式，验证每个内容项
-                                content = msg.content.map((item: any, itemIndex: number) => {
-                                    if (!item.type) {
-                                        logWarn(`Invalid content item at message ${index}, item ${itemIndex}`, item);
-                                        return { type: 'text', text: String(item.text || item) };
-                                    }
-                                    return item;
-                                });
+                        content = msg.content.map((item: any, itemIndex: number) =>
+                            normalizeContentItem(item, { messageIndex: index, itemIndex })
+                        );
                             } else if (typeof msg.content === 'string') {
                                 // 如果是字符串，转换为标准格式
                                 content = [{ type: 'text', text: msg.content }];
@@ -745,7 +860,7 @@ export function createCustomAgent(settings: CustomAgentSettings = {}) {
                     hasMaxTokens: customBody.max_tokens !== undefined
                 });
 
-                logDebug('Request body details', customBody);
+                logDebug('Request body details', sanitizeRequestBodyForLog(customBody));
 
                 // 设置请求超时
                 const timeoutMs = settings.timeout || 60000; // 默认 60 秒

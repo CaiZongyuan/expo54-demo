@@ -1,13 +1,12 @@
 import { useChat } from "@ai-sdk/react";
 import { Ionicons } from "@expo/vector-icons";
-import { DefaultChatTransport } from "ai";
+import { DefaultChatTransport, type FileUIPart } from "ai";
 import * as ImagePicker from "expo-image-picker";
 import { fetch as expoFetch } from "expo/fetch";
 import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Animated,
-  Dimensions,
   Image,
   Keyboard,
   KeyboardAvoidingView,
@@ -26,8 +25,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AIMessage, UserMessage } from "../../components/chat";
 import { generateAPIUrl } from "../../utils/fetch";
 import { convertImageToBase64 } from "../../utils/imageUtils";
-
-const { width: screenWidth } = Dimensions.get("window");
 
 export default function ChatBotScreen() {
   const [input, setInput] = useState("");
@@ -126,19 +123,13 @@ export default function ChatBotScreen() {
   };
 
   const handleSendMessage = async () => {
-    if (!input.trim() && !selectedImage) return;
+    const text = input.trim();
+    if (!text && !selectedImage) return;
 
-    const parts: any[] = [];
+    const files: FileUIPart[] = [];
 
-    // 添加文本内容
-    if (input.trim()) {
-      parts.push({ type: "text", text: input.trim() });
-    }
-
-    // 添加图片内容
     if (selectedImage) {
       try {
-        // 将图片转换为base64
         const base64Result = await convertImageToBase64(selectedImage, {
           quality: 0.8,
           maxWidth: 1024,
@@ -146,10 +137,13 @@ export default function ChatBotScreen() {
           compress: true,
         });
 
-        parts.push({
-          type: "image",
-          image_url: base64Result.base64, // 用于API调用的base64数据
-          local_uri: selectedImage, // 用于UI显示的本地URL
+        const format = base64Result.format || "jpeg";
+
+        files.push({
+          type: "file",
+          mediaType: `image/${format}`,
+          filename: `upload-${Date.now()}.${format}`,
+          url: base64Result.base64,
         });
 
         console.log("图片转换完成，格式:", base64Result.format);
@@ -169,31 +163,26 @@ export default function ChatBotScreen() {
       }
     }
 
-    if (parts.length > 0) {
-      // 打印parts内容，base64只显示前100字符
-      console.log("发送的parts内容:");
-      parts.forEach((part, index) => {
-        if (part.type === "text") {
-          console.log(`Part ${index}:`, {
-            type: part.type,
-            text: part.text,
-          });
-        } else if (part.type === "image") {
-          const base64Preview =
-            part.image_url.length > 100
-              ? part.image_url.substring(0, 100) + "..."
-              : part.image_url;
-          console.log(`Part ${index}:`, {
-            type: part.type,
-            image_url: base64Preview,
-            local_uri: part.local_uri,
-          });
-        }
+    try {
+      console.log("发送内容:", {
+        text,
+        files: files.map((file) => ({
+          mediaType: file.mediaType,
+          filename: file.filename,
+          preview: file.url.substring(0, 50) + "...",
+        })),
       });
 
-      sendMessage({ parts });
+      await sendMessage({
+        ...(text ? { text } : {}),
+        ...(files.length ? { files } : {}),
+      });
+
       setInput("");
       setSelectedImage(null);
+    } catch (error) {
+      console.error("发送消息失败:", error);
+      Alert.alert("错误", "发送消息失败，请重试");
     }
   };
 

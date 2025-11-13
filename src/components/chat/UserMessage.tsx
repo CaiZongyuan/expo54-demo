@@ -41,15 +41,25 @@ export function UserMessage({ parts, messageId }: UserMessageProps) {
                     color: "white",
                     lineHeight: 22,
                   }}
-                >
-                  {part.text}
-                </Text>
-              );
+              >
+                {part.text}
+              </Text>
+            );
+            case "file":
             case "image":
+              if (
+                part.type === "file" &&
+                part.mediaType &&
+                !part.mediaType.startsWith("image/")
+              ) {
+                return null;
+              }
               return (
                 <Image
                   key={`${messageId}-${i}`}
-                  source={{ uri: part.local_uri || part.image_url }}
+                  source={{
+                    uri: part.local_uri || part.image_url || part.url,
+                  }}
                   style={{
                     width: 200,
                     height: 200,
